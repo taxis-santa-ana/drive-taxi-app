@@ -3,15 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Drive Taxi SA</title>
+    <title>Driver Santa Ana</title>
     
-    <!-- PWA -->
-    <meta name="theme-color" content="#3366FF">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="icon" type="image/png" href="1535791.png">
-    <link rel="apple-touch-icon" href="1535791.png">
-
     <!-- Firebase & Leaflet -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -19,86 +12,92 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        :root { --waze-blue: #3366FF; --waze-baby: #B2D8FF; --dark: #202124; --green: #00D37F; --white: #FFFFFF; }
-        body { font-family: 'Segoe UI', sans-serif; background: #F2F4F7; margin: 0; color: var(--dark); -webkit-tap-highlight-color: transparent; }
-        .card { background: var(--white); padding: 25px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); margin: 15px; border: 1px solid #E9EDF0; }
-        #map-user, #map-driver { height: 350px; width: 100%; border-radius: 20px; margin-bottom: 15px; z-index: 1; border: 1px solid #ddd; }
-        input { width: 100%; padding: 18px; margin-bottom: 12px; border-radius: 16px; border: 2px solid #E9EDF0; font-size: 16px; box-sizing: border-box; outline: none; }
-        button { width: 100%; padding: 18px; border-radius: 20px; border: none; background: var(--waze-blue); color: white; font-weight: bold; cursor: pointer; font-size: 18px; margin-top: 10px; }
-        button:active { transform: scale(0.98); }
+        :root { --waze-blue: #3366FF; --dark: #202124; --green: #00D37F; --white: #FFFFFF; }
+        body { font-family: 'Segoe UI', sans-serif; background: #F2F4F7; margin: 0; color: var(--dark); overflow-x: hidden; }
+        .card { background: var(--white); padding: 20px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); margin: 15px; }
+        #map-user, #map-driver { height: 350px; width: 100%; border-radius: 15px; margin-bottom: 10px; background: #ddd; }
+        input { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 12px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 18px; border-radius: 15px; border: none; background: var(--waze-blue); color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        button:active { transform: scale(0.98); opacity: 0.9; }
         .hidden { display: none !important; }
-        .btn-outline { background: #E9EDF0; color: var(--dark); }
-        .info-bubble { background: var(--waze-baby); padding: 12px; border-radius: 16px; font-size: 14px; margin-bottom: 15px; color: #003366; text-align: center; }
-        .header-bar { background: var(--white); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E9EDF0; }
-        .logo-main { width: 120px; height: 120px; margin-bottom: 15px; border-radius: 50%; object-fit: cover; }
+        .btn-outline { background: #E9EDF0; color: var(--dark); margin-top: 10px; }
+        .header-bar { background: var(--white); padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body onload="checkSession()">
 
     <div id="app">
         <!-- INICIO -->
-        <div id="screen-start" style="text-align:center; padding-top:60px;">
-            <img src="1535791.png" class="logo-main">
-            <h1 style="font-weight: 800;">Drive Taxi SA</h1>
+        <div id="screen-start" style="text-align:center; padding-top:80px;">
+            <h1 style="font-weight: 800; font-size: 32px; margin-bottom: 5px;">Driver Santa Ana</h1>
+            <p style="color: gray; margin-bottom: 30px;">Transporte rápido y seguro</p>
             <div style="padding: 20px;">
                 <button onclick="showScreen('screen-user'); initUserMap();">PEDIR UN VIAJE</button>
-                <button onclick="showScreen('screen-login')" class="btn-outline" style="margin-top:20px;">MODO CONDUCTOR</button>
+                <button onclick="showScreen('screen-login')" class="btn-outline">MODO CONDUCTOR</button>
             </div>
         </div>
 
-        <!-- LOGIN CONDUCTOR -->
+        <!-- LOGIN -->
         <div id="screen-login" class="hidden">
             <div class="card">
-                <h2>Ingreso Conductor</h2>
+                <h2 style="margin-top:0;">Ingreso</h2>
                 <input type="text" id="l-user" placeholder="Usuario">
                 <input type="password" id="l-pass" placeholder="Contraseña">
                 <button onclick="intentarLogin()">ENTRAR</button>
-                <button onclick="showScreen('screen-register')" class="btn-outline">¿ERES NUEVO? REGÍSTRATE</button>
+                <button onclick="showScreen('screen-register')" class="btn-outline">REGISTRARSE</button>
                 <button onclick="location.reload()" class="btn-outline">VOLVER</button>
             </div>
         </div>
 
-        <!-- REGISTRO CONDUCTOR -->
+        <!-- REGISTRO -->
         <div id="screen-register" class="hidden">
             <div class="card">
-                <h2>Registro de Conductor</h2>
+                <h2 style="margin-top:0;">Registro Conductor</h2>
                 <input type="text" id="r-nombre" placeholder="Nombre completo">
-                <input type="text" id="r-user" placeholder="Crea un Usuario">
-                <input type="password" id="r-pass" placeholder="Crea una Contraseña">
-                <hr>
-                <input type="text" id="r-placa" placeholder="Número de Placa">
-                <input type="text" id="r-modelo" placeholder="Modelo del Vehículo (Ej: Kia Picanto)">
-                <input type="text" id="r-color" placeholder="Color del Vehículo">
-                <button onclick="registrarConductor()" style="background:var(--green);">FINALIZAR REGISTRO</button>
-                <button onclick="showScreen('screen-login')" class="btn-outline">YA TENGO CUENTA</button>
-            </div>
-        </div>
-
-        <!-- USUARIO -->
-        <div id="screen-user" class="hidden">
-            <div class="card">
-                <h2 id="step-title">📍 Punto de recogida</h2>
-                <div id="map-user"></div>
-                <div id="route-info" class="info-bubble">Toca el mapa para marcar el origen</div>
-                <input type="text" id="u-nombre" placeholder="¿Cuál es tu nombre?">
-                <input type="number" id="u-oferta" placeholder="Tu Oferta ($)">
-                <button id="btn-next" onclick="toggleSelectionMode()">ESTABLECER DESTINO</button>
-                <button id="btn-send" onclick="enviarPedido()" class="hidden" style="background:var(--green);">SOLICITAR TAXI</button>
-                <button onclick="location.reload()" class="btn-outline">VOLVER</button>
+                <input type="text" id="r-user" placeholder="Usuario">
+                <input type="password" id="r-pass" placeholder="Contraseña">
+                <input type="text" id="r-placa" placeholder="Placa (P-00000)">
+                <input type="text" id="r-modelo" placeholder="Modelo (Ej: Picanto)">
+                <button onclick="registrarConductor()" style="background:var(--green);">REGISTRAR</button>
+                <button onclick="showScreen('screen-login')" class="btn-outline">CANCELAR</button>
             </div>
         </div>
 
         <!-- PANEL CONDUCTOR -->
         <div id="screen-driver" class="hidden">
             <div class="header-bar">
-                <span style="font-weight:bold;">Hola, <span id="d-label" style="color:var(--waze-blue);"></span></span>
-                <button onclick="cerrarSesion()" style="width:auto; padding:8px; font-size:12px; margin:0; background:#FF4B4B;">SALIR</button>
+                <span>Hola, <b id="d-label"></b></span>
+                <button onclick="cerrarSesion()" style="width:auto; padding:8px 15px; background:#FF4B4B; font-size: 12px;">SALIR</button>
             </div>
-            <div id="d-pedidos"></div>
+            <div id="d-pedidos" style="padding-bottom: 20px;"></div>
+            
+            <!-- VISTA DE VIAJE ACTIVO -->
+            <div id="d-activo" class="hidden">
+                <div class="card" style="border: 2px solid var(--green);">
+                    <h3 style="margin-top:0; color: var(--green);">✅ Viaje en curso</h3>
+                    <p id="info-cliente"></p>
+                    <div id="map-driver"></div>
+                    <button onclick="finalizarViaje()" style="background:var(--dark); margin-top:10px;">FINALIZAR VIAJE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- USUARIO -->
+        <div id="screen-user" class="hidden">
+            <div class="card">
+                <h2 id="step-title" style="margin-top:0; font-size: 20px;">📍 Punto de recogida</h2>
+                <div id="map-user"></div>
+                <input type="text" id="u-nombre" placeholder="Tu nombre">
+                <input type="number" id="u-oferta" placeholder="Tu oferta $">
+                <button id="btn-next" onclick="toggleSelectionMode()">MARCAR DESTINO</button>
+                <button id="btn-send" onclick="enviarPedido()" class="hidden" style="background:var(--green);">SOLICITAR TAXI</button>
+                <button onclick="location.reload()" class="btn-outline">VOLVER</button>
+            </div>
         </div>
     </div>
 
     <script>
+        // Configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDgIX4jKwyQcfaTSP0QXAdIAR7UzrQMK3g",
             authDomain: "drive-taxi-baad8.firebaseapp.com",
@@ -110,75 +109,104 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let mapU, markerOri, markerDes, currentTripId, selectionMode = 'origen', coordsOri, coordsDes;
+        let mapU, markerOri, markerDes, coordsOri, coordsDes, selectionMode = 'origen';
 
-        function showScreen(id) {
+        // Funciones Globales para asegurar funcionamiento del botón
+        window.showScreen = (id) => {
             document.querySelectorAll('#app > div').forEach(s => s.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
-        }
+        };
 
-        // --- LÓGICA DE SESIÓN ---
-        function checkSession() {
+        window.checkSession = () => {
             const session = localStorage.getItem('driver_data');
-            if (session) {
-                const data = JSON.parse(session);
-                initDriverPanel(data);
-            }
-        }
+            if (session) initDriverPanel(JSON.parse(session));
+        };
 
-        function registrarConductor() {
+        window.registrarConductor = () => {
             const data = {
                 nombre: document.getElementById('r-nombre').value,
-                user: document.getElementById('r-user').value,
+                user: document.getElementById('r-user').value.toLowerCase(),
                 pass: document.getElementById('r-pass').value,
                 placa: document.getElementById('r-placa').value,
-                modelo: document.getElementById('r-modelo').value,
-                color: document.getElementById('r-color').value
+                modelo: document.getElementById('r-modelo').value
             };
-            if(!data.user || !data.pass || !data.placa) return alert("Completa los datos");
-            
+            if(!data.user || !data.pass) return alert("Completa los datos");
             db.ref('conductores/' + data.user).set(data).then(() => {
                 localStorage.setItem('driver_data', JSON.stringify(data));
                 initDriverPanel(data);
             });
-        }
+        };
 
-        function intentarLogin() {
-            const user = document.getElementById('l-user').value;
+        window.intentarLogin = () => {
+            const user = document.getElementById('l-user').value.toLowerCase();
             const pass = document.getElementById('l-pass').value;
-            
             db.ref('conductores/' + user).once('value', snap => {
                 const data = snap.val();
                 if (data && data.pass === pass) {
                     localStorage.setItem('driver_data', JSON.stringify(data));
                     initDriverPanel(data);
-                } else { alert("Usuario o contraseña incorrectos"); }
+                } else { alert("Usuario o clave incorrecta"); }
             });
-        }
+        };
 
         function initDriverPanel(data) {
             showScreen('screen-driver');
             document.getElementById('d-label').innerText = data.nombre;
+            
+            // Escuchar viajes en tiempo real
             db.ref('viajes').on('value', snap => {
                 const list = document.getElementById('d-pedidos');
+                const activo = document.getElementById('d-activo');
+                
+                // Si el conductor ya tiene un viaje aceptado, no mostrar la lista
+                if (!activo.classList.contains('hidden')) return;
+
                 list.innerHTML = "";
                 snap.forEach(child => {
                     const v = child.val();
                     if(v.estado === 'buscando') {
-                        list.innerHTML += `<div class="card">
-                            <p>👤 <b>${v.cliente}</b> ofrece <b>$${v.oferta}</b></p>
-                            <p style="font-size:12px; color:gray;">Ruta: Mapa disponible al aceptar</p>
-                            <button onclick="aceptarViaje('${child.key}')">ACEPTAR VIAJE</button>
-                        </div>`;
+                        const card = document.createElement('div');
+                        card.className = "card";
+                        card.innerHTML = `
+                            <p style="margin:0 0 10px 0;">🚕 <b>${v.cliente}</b></p>
+                            <p style="font-size:24px; font-weight:bold; color:var(--green); margin:0 0 15px 0;">$${v.oferta}</p>
+                            <button onclick="aceptarViaje('${child.key}', '${v.cliente}')">ACEPTAR VIAJE</button>
+                        `;
+                        list.appendChild(card);
                     }
                 });
             });
         }
 
-        // --- LÓGICA USUARIO ---
-        function initUserMap() {
+        window.aceptarViaje = (viajeId, clienteNombre) => {
+            const driver = JSON.parse(localStorage.getItem('driver_data'));
+            
+            db.ref('viajes/' + viajeId).update({
+                estado: 'aceptado',
+                conductor: driver.nombre,
+                placa: driver.placa,
+                modelo: driver.modelo
+            }).then(() => {
+                // Cambiar vista
+                document.getElementById('d-pedidos').innerHTML = "";
+                document.getElementById('d-activo').classList.remove('hidden');
+                document.getElementById('info-cliente').innerText = "Cliente: " + clienteNombre;
+                alert("¡Viaje Aceptado! Dirígete al cliente.");
+            }).catch(err => {
+                console.error(err);
+                alert("Error al aceptar: " + err.message);
+            });
+        };
+
+        window.finalizarViaje = () => {
+            if(confirm("¿Confirmas que el viaje terminó?")) {
+                location.reload(); 
+            }
+        };
+
+        window.initUserMap = () => {
             if (!mapU) {
-                mapU = L.map('map-user', {zoomControl: false}).setView([13.97, -89.56], 15);
+                mapU = L.map('map-user').setView([13.97, -89.56], 14);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapU);
                 mapU.on('click', e => {
                     if (selectionMode === 'origen') {
@@ -188,34 +216,39 @@
                     } else {
                         coordsDes = e.latlng;
                         if (markerDes) mapU.removeLayer(markerDes);
-                        markerDes = L.marker(coordsDes).addTo(mapU);
+                        markerDes = L.marker(coordsDes).addTo(mapU).bindPopup("Destino").openPopup();
                     }
                 });
             }
-        }
+        };
 
-        function toggleSelectionMode() {
-            if (!coordsOri) return alert("Marca el origen");
+        window.toggleSelectionMode = () => {
+            if(!coordsOri) return alert("Primero toca el mapa para marcar el origen");
             selectionMode = 'destino';
-            document.getElementById('step-title').innerText = "🏁 Punto de destino";
+            document.getElementById('step-title').innerText = "🏁 Ahora toca el Destino";
             document.getElementById('btn-next').classList.add('hidden');
             document.getElementById('btn-send').classList.remove('hidden');
-        }
+        };
 
-        function enviarPedido() {
-            const nom = document.getElementById('u-nombre').value;
-            const ofe = document.getElementById('u-oferta').value;
-            if(!nom || !ofe || !coordsDes) return alert("Faltan datos");
-            currentTripId = "VIAJE-" + Date.now();
-            db.ref('viajes/' + currentTripId).set({
-                cliente: nom, oferta: ofe, estado: 'buscando',
+        window.enviarPedido = () => {
+            const nombre = document.getElementById('u-nombre').value;
+            const oferta = document.getElementById('u-oferta').value;
+            if(!nombre || !oferta || !coordsDes) return alert("Completa todos los campos y marca el destino");
+
+            const id = "V-" + Date.now();
+            db.ref('viajes/' + id).set({
+                cliente: nombre,
+                oferta: oferta,
+                estado: 'buscando',
                 latOri: coordsOri.lat, lngOri: coordsOri.lng,
                 latDes: coordsDes.lat, lngDes: coordsDes.lng
+            }).then(() => {
+                alert("Pedido enviado con éxito. Espera confirmación.");
+                location.reload();
             });
-            alert("Solicitud enviada. Espera respuesta.");
-        }
+        };
 
-        function cerrarSesion() { localStorage.clear(); location.reload(); }
+        window.cerrarSesion = () => { localStorage.clear(); location.reload(); };
     </script>
 </body>
 </html>
