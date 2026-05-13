@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DriveTaxi - Sistema Contraoferta Fix</title>
+    <title>DriveTaxi - Fix Visual y Pilotos</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -28,6 +28,7 @@
         .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
         .disponible { background: #27ae60; color: white; }
         .en-viaje { background: #e67e22; color: white; }
+        .offline { background: #95a5a6; color: white; }
     </style>
 </head>
 <body>
@@ -88,7 +89,7 @@
                 <button class="btn-secondary" style="width:70px; font-size:0.7rem" onclick="logoutConductor()">Salir</button>
             </div>
             <div id="estado-pilotos" class="card" style="font-size:0.8rem">
-                <b>Pilotos en línea:</b>
+                <b>Lista de Conductores:</b>
                 <div id="lista-estados"></div>
             </div>
             <hr>
@@ -133,7 +134,10 @@
 
     function encodeImage(input, tipo) {
         const reader = new FileReader();
-        reader.onload = e => { if(tipo === 'perfil') fotoPerfil = e.target.result; else fotoCarro = e.target.result; };
+        reader.onload = e => { 
+            if(tipo === 'perfil') fotoPerfil = e.target.result; 
+            else fotoCarro = e.target.result; 
+        };
         reader.readAsDataURL(input.files[0]);
     }
 
@@ -145,9 +149,14 @@
             placa: document.getElementById('d-placa').value, 
             usuario: document.getElementById('d-user').value, 
             pass: document.getElementById('d-pass').value, 
-            foto: fotoPerfil, fotoV: fotoCarro, estado: "disponible"
+            foto: fotoPerfil, 
+            fotoV: fotoCarro, 
+            estado: "disponible"
         };
-        database.ref('conductores/' + d.usuario).set(d).then(() => { alert("Registrado"); changeView('view-driver-login'); });
+        database.ref('conductores/' + d.usuario).set(d).then(() => { 
+            alert("Registrado correctamente"); 
+            changeView('view-driver-login'); 
+        });
     }
 
     function loginConductor() {
@@ -161,7 +170,7 @@
                 changeView('view-driver-panel'); 
                 cargarViajesDisponibles();
                 escucharPilotos();
-            } else { alert("Error"); }
+            } else { alert("Usuario o contraseña incorrectos"); }
         });
     }
 
@@ -175,7 +184,7 @@
             list.innerHTML = "";
             snap.forEach(c => {
                 const p = c.val();
-                const clase = p.estado === 'disponible' ? 'disponible' : 'en-viaje';
+                const clase = p.estado === 'disponible' ? 'disponible' : (p.estado === 'en viaje' ? 'en-viaje' : 'offline');
                 list.innerHTML += `<p>${p.nombre} <span class="badge ${clase}">${p.estado}</span></p>`;
             });
         });
@@ -202,7 +211,6 @@
             if(!v) return;
             datosViajeLocal = v;
             
-            // Lógica de Contraoferta para el Usuario
             const ofertaDiv = document.getElementById('ofertas-recibidas');
             if(v.estado === "esperando" && v.contraoferta) {
                 ofertaDiv.innerHTML = `
@@ -210,9 +218,7 @@
                         <p><b>${v.contraoferta.nombre}</b> ofrece <b>$${v.contraoferta.monto}</b></p>
                         <button onclick="aceptarContraoferta()">Aceptar Contraoferta</button>
                     </div>`;
-            } else {
-                ofertaDiv.innerHTML = "";
-            }
+            } else { ofertaDiv.innerHTML = ""; }
 
             if(v.estado === "aceptado") { 
                 mostrarFichaCompleta(v.conductor); 
@@ -255,8 +261,7 @@
             database.ref('viajes_activos/' + id).update({ 
                 contraoferta: { nombre: miNombre, monto: monto, datosConductor: conductorLogueado } 
             });
-            alert("Contraoferta enviada. Espera al usuario.");
-            escucharViaje(); // El conductor también empieza a escuchar si el usuario acepta
+            escucharViaje();
         }
     }
 
@@ -270,15 +275,22 @@
     function mostrarFichaCompleta(c) {
         changeView('view-active-trip');
         const info = document.getElementById('info-asignada');
+        // Asegurando que carro, placa y fotos carguen correctamente
         info.innerHTML = `
             <div style="text-align:center">
                 <p style="color:green; font-weight:bold">¡Su conductor asignado va en camino!</p>
                 <div style="display:flex; gap:10px; justify-content:center">
-                    <div><img src="${c.foto}" class="img-preview" style="width:80px;height:80px;border-radius:50%"><br><small>Piloto</small></div>
-                    <div><img src="${c.fotoV}" class="img-preview" style="width:120px;height:80px"><br><small>Vehículo</small></div>
+                    <div>
+                        <img src="${c.foto || ''}" class="img-preview" style="width:80px;height:80px;border-radius:50%; object-fit:cover">
+                        <br><small>Piloto</small>
+                    </div>
+                    <div>
+                        <img src="${c.fotoV || ''}" class="img-preview" style="width:120px;height:80px; object-fit:cover">
+                        <br><small>Vehículo</small>
+                    </div>
                 </div>
                 <h4>${c.nombre}</h4>
-                <p>${c.carro} | <b>${c.placa}</b></p>
+                <p>${c.carro || 'Vehículo'} | <b>${c.placa || '---'}</b></p>
                 <h2 style="color:var(--accent)">$${datosViajeLocal.oferta}</h2>
             </div>`;
         document.getElementById('btn-finalizar').style.display = (rol === "conductor") ? "block" : "none";
