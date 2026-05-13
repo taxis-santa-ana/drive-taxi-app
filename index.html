@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DriveTaxi - Finalización y Panel Fix</title>
+    <title>DriveTaxi - Sistema Limpio</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -23,7 +23,7 @@
         .msg { padding: 8px 12px; border-radius: 15px; margin: 4px 0; max-width: 80%; font-size: 0.8rem; }
         .msg.user { background: var(--primary); align-self: flex-end; }
         .msg.driver { background: #ddd; align-self: flex-start; }
-        .img-preview { width: 100%; height: 120px; border-radius: 8px; object-fit: cover; margin-top: 5px; background: #eee; }
+        .img-preview { width: 100%; height: 100px; border-radius: 8px; object-fit: cover; background: #eee; margin-bottom: 5px; }
         .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
         .disponible { background: #27ae60; color: white; }
         .en-viaje { background: #e67e22; color: white; }
@@ -35,81 +35,77 @@
     <div class="header">DRIVE-TAXI</div>
 
     <div class="container">
-        <!-- HOME -->
+        <!-- VISTAS -->
         <div id="view-home">
             <button onclick="changeView('view-user-form')">Pedir un Viaje</button>
             <button class="btn-secondary" onclick="changeView('view-driver-login')">Entrar como Conductor</button>
         </div>
 
-        <!-- LOGIN -->
         <div id="view-driver-login" class="hidden">
             <h3>Login Piloto</h3>
             <input type="text" id="l-user" placeholder="Usuario">
             <input type="password" id="l-pass" placeholder="Contraseña">
             <button onclick="loginConductor()">Ingresar</button>
-            <button class="btn-secondary" onclick="changeView('view-driver-reg')">Registro Conductor Nuevo</button>
+            <button class="btn-secondary" onclick="changeView('view-driver-reg')">Registro Nuevo</button>
             <button class="btn-secondary" onclick="changeView('view-home')" style="margin-top:20px">Volver</button>
         </div>
 
-        <!-- REGISTRO -->
         <div id="view-driver-reg" class="hidden">
-            <h3>Registro de Piloto</h3>
+            <h3>Registro</h3>
             <input type="text" id="d-nombre" placeholder="Nombre Completo">
+            <label>Tu Foto:</label>
             <input type="file" accept="image/*" onchange="encodeImage(this, 'perfil')">
-            <input type="text" id="d-carro" placeholder="Modelo y Color del Vehículo">
-            <input type="text" id="d-placa" placeholder="Número de Placa">
+            <input type="text" id="d-carro" placeholder="Modelo del Vehículo (Ej: Kia Picanto Rojo)">
+            <input type="text" id="d-placa" placeholder="Placa">
+            <label>Foto del Vehículo:</label>
             <input type="file" accept="image/*" onchange="encodeImage(this, 'carro')">
-            <input type="text" id="d-user" placeholder="Crea un Usuario">
-            <input type="password" id="d-pass" placeholder="Crea una Contraseña">
-            <button onclick="registrarConductor()">Completar Registro</button>
+            <input type="text" id="d-user" placeholder="Usuario">
+            <input type="password" id="d-pass" placeholder="Contraseña">
+            <button onclick="registrarConductor()">Registrar</button>
             <button class="btn-secondary" onclick="changeView('view-driver-login')">Volver</button>
         </div>
 
-        <!-- FORM USUARIO -->
         <div id="view-user-form" class="hidden">
             <h3>Solicitud de Viaje</h3>
-            <input type="text" id="u-nombre" placeholder="¿Cuál es tu nombre?">
+            <input type="text" id="u-nombre" placeholder="Nombre">
             <input type="text" id="u-origen" placeholder="Origen">
             <input type="text" id="u-destino" placeholder="Destino">
-            <label>Tu oferta ($):</label>
-            <input type="number" id="u-oferta" value="4.00">
+            <label>Oferta ($):</label>
+            <input type="number" id="u-oferta" value="5.00">
             <div id="ofertas-recibidas"></div>
             <button onclick="crearViaje()">Solicitar ahora</button>
             <button class="btn-secondary" onclick="changeView('view-home')">Cancelar</button>
         </div>
 
-        <!-- PANEL CONDUCTOR -->
         <div id="view-driver-panel" class="hidden">
             <div style="display:flex; justify-content: space-between; align-items: center;">
                 <h3>Panel de Pilotos</h3>
                 <button class="btn-secondary" style="width:70px; font-size:0.7rem" onclick="logoutConductor()">Salir</button>
             </div>
-            <div id="estado-pilotos" class="card" style="font-size:0.8rem">
-                <b>Pilotos en Línea:</b>
+            <div class="card">
+                <b>Conductores Activos:</b>
                 <div id="lista-estados"></div>
             </div>
             <hr>
-            <h4>Viajes Disponibles</h4>
+            <h4>Viajes en Espera</h4>
             <div id="lista-viajes"></div>
         </div>
 
-        <!-- VIAJE ACTIVO -->
         <div id="view-active-trip" class="hidden">
             <div id="info-asignada" class="card"></div>
             <div id="chat-box"></div>
             <div style="display: flex; gap: 5px; margin-top:10px">
-                <input type="text" id="chat-input" placeholder="Escribe un mensaje...">
-                <button style="width:70px" onclick="enviarMensaje()">OK</button>
+                <input type="text" id="chat-input" placeholder="Mensaje...">
+                <button style="width:60px" onclick="enviarMensaje()">OK</button>
             </div>
             <button id="btn-finalizar" class="btn-secondary" style="margin-top:20px" onclick="finalizarViaje()">Finalizar Viaje</button>
         </div>
 
-        <!-- TICKET FINAL -->
         <div id="view-ticket" class="hidden">
             <div class="card" style="text-align: center;">
-                <h2 style="color:var(--accent)">¡LLEGASTE A TU DESTINO!</h2>
+                <h2 style="color:var(--accent)">¡VIAJE COMPLETADO!</h2>
                 <div id="ticket-content"></div>
-                <button onclick="location.reload()">Nuevo Viaje</button>
+                <button onclick="location.reload()">Cerrar</button>
             </div>
         </div>
     </div>
@@ -157,7 +153,7 @@
                 changeView('view-driver-panel'); 
                 cargarViajesDisponibles();
                 escucharPilotos();
-            } else { alert("Error de acceso"); }
+            } else { alert("Datos incorrectos"); }
         });
     }
 
@@ -171,9 +167,10 @@
             list.innerHTML = "";
             snap.forEach(c => {
                 const p = c.val();
-                if(p.estado !== "offline") { // Solo muestra los que tienen login activo
+                // FILTRO: Solo conductores reales con sesión iniciada
+                if(p.nombre && p.estado !== "offline") {
                     const clase = p.estado === 'disponible' ? 'disponible' : 'en-viaje';
-                    list.innerHTML += `<p>${p.nombre} <span class="badge ${clase}">${p.estado}</span></p>`;
+                    list.innerHTML += `<p><b>${p.nombre}</b> <span class="badge ${clase}">${p.estado}</span></p>`;
                 }
             });
         });
@@ -202,8 +199,8 @@
             if(v.estado === "esperando" && v.contraoferta) {
                 document.getElementById('ofertas-recibidas').innerHTML = `
                     <div class="card" style="border: 2px solid var(--primary)">
-                        <p><b>${v.contraoferta.nombre}</b> ofrece <b>$${v.contraoferta.monto}</b></p>
-                        <button onclick="aceptarContraoferta()">Aceptar Contraoferta</button>
+                        <p>${v.contraoferta.nombre} ofrece <b>$${v.contraoferta.monto}</b></p>
+                        <button onclick="aceptarContraoferta()">Aceptar</button>
                     </div>`;
             }
 
@@ -213,13 +210,8 @@
             }
 
             if(v.estado === "finalizado") {
-                if(rol === "usuario") {
-                    mostrarTicket(v);
-                } else {
-                    alert("Viaje finalizado con éxito.");
-                    tripID = null; // Reset local
-                    changeView('view-driver-panel');
-                }
+                if(rol === "usuario") mostrarTicket(v);
+                else { tripID = null; changeView('view-driver-panel'); }
             }
         });
     }
@@ -235,15 +227,15 @@
     function cargarViajesDisponibles() {
         database.ref('viajes_activos').on('value', snap => {
             const container = document.getElementById('lista-viajes');
-            if(tripID) return; // Si ya tiene un viaje no carga la lista
+            if(tripID) return;
             container.innerHTML = "";
             snap.forEach(child => {
                 const v = child.val();
                 if(v.estado === "esperando") {
                     container.innerHTML += `<div class="card">
-                        <b>De:</b> ${v.origen}<br><b>A:</b> ${v.destino}<br>Oferta: <b>$${v.oferta}</b>
+                        <b>Ruta:</b> ${v.origen} → ${v.destino}<br>Oferta: <b>$${v.oferta}</b>
                         <button onclick="aceptarViajeDirecto('${child.key}')">Aceptar</button>
-                        <button class="btn-secondary" onclick="enviarContraoferta('${child.key}')">Contraofertar</button>
+                        <button class="btn-secondary" onclick="enviarContraoferta('${child.key}')">Ofertar</button>
                     </div>`;
                 }
             });
@@ -251,7 +243,7 @@
     }
 
     function enviarContraoferta(id) {
-        const monto = prompt("Tu contraoferta ($):");
+        const monto = prompt("Tu precio:");
         if(monto) {
             tripID = id;
             database.ref('viajes_activos/' + id).update({ 
@@ -273,12 +265,12 @@
         document.getElementById('info-asignada').innerHTML = `
             <div style="text-align:center">
                 <div style="display:flex; gap:10px; justify-content:center">
-                    <img src="${c.foto}" class="img-preview" style="width:70px;height:70px;border-radius:50%">
-                    <img src="${c.fotoV}" class="img-preview" style="width:100px;height:70px">
+                    <img src="${c.foto}" class="img-preview" style="width:80px;height:80px;border-radius:50%">
+                    <img src="${c.fotoV}" class="img-preview" style="width:120px;height:80px">
                 </div>
                 <h4>${c.nombre}</h4>
-                <p>${c.carro} | <b>${c.placa}</b></p>
-                <h2 style="color:var(--accent)">Total: $${datosViajeLocal.oferta}</h2>
+                <p><b>Vehículo:</b> ${c.carro}<br><b>Placa:</b> ${c.placa}</p>
+                <h2 style="color:var(--accent)">Pago: $${datosViajeLocal.oferta}</h2>
             </div>`;
         document.getElementById('btn-finalizar').style.display = (rol === "conductor") ? "block" : "none";
     }
@@ -286,17 +278,14 @@
     function mostrarTicket(v) {
         changeView('view-ticket');
         document.getElementById('ticket-content').innerHTML = `
-            <p><b>Origen:</b> ${v.origen}</p>
-            <p><b>Destino:</b> ${v.destino}</p>
-            <hr>
-            <p>Conductor: ${v.conductor.nombre}</p>
-            <h1>$${v.oferta}</h1>
+            <p><b>De:</b> ${v.origen}<br><b>A:</b> ${v.destino}</p>
+            <p>Piloto: ${v.conductor.nombre}</p>
+            <h1 style="font-size:3rem">$${v.oferta}</h1>
         `;
     }
 
     function iniciarChat() {
         const chatBox = document.getElementById('chat-box');
-        database.ref('chats/' + tripID).off();
         database.ref('chats/' + tripID).on('child_added', snap => {
             const m = snap.val(), clase = (m.rol === rol) ? 'user' : 'driver';
             chatBox.innerHTML += `<div class="msg ${clase}"><b>${m.nombre}:</b><br>${m.texto}</div>`;
