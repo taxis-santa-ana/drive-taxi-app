@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DriveTaxi - Sistema Corregido</title>
+    <title>DriveTaxi - Fix Chat & Perfil</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -144,7 +144,6 @@
         }
     }
 
-    // --- LOGIN Y REGISTRO ---
     function loginConductor() {
         const user = document.getElementById('l-user').value;
         const pass = document.getElementById('l-pass').value;
@@ -169,7 +168,6 @@
         });
     }
 
-    // --- LÓGICA USUARIO ---
     function crearViaje() {
         miNombre = document.getElementById('u-nombre').value;
         const origen = document.getElementById('u-origen').value, destino = document.getElementById('u-destino').value, oferta = document.getElementById('u-oferta').value;
@@ -203,7 +201,6 @@
         database.ref('viajes_activos/' + tripID).update({ estado: "aceptado", oferta: datosViajeLocal.contraoferta.monto, conductor: datosViajeLocal.contraoferta.datosConductor });
     }
 
-    // --- LÓGICA CONDUCTOR PANEL ---
     function cargarViajesDisponibles() {
         database.ref('viajes_activos').on('value', (snap) => {
             const container = document.getElementById('lista-viajes');
@@ -225,8 +222,10 @@
 
     function aceptarViajeDirecto(id) {
         tripID = id;
-        database.ref('viajes_activos/' + id).update({ estado: "aceptado", conductor: conductorLogueado }).then(() => {
-            // Aseguramos que el conductor vea el chat inmediatamente
+        database.ref('viajes_activos/' + id).update({ 
+            estado: "aceptado", 
+            conductor: conductorLogueado 
+        }).then(() => {
             database.ref('viajes_activos/' + id).once('value', s => {
                 datosViajeLocal = s.val();
                 mostrarFichaCompleta(conductorLogueado);
@@ -240,25 +239,25 @@
         if(monto) database.ref('viajes_activos/' + id).update({ contraoferta: { nombre: miNombre, monto, datosConductor: conductorLogueado } });
     }
 
-    // --- CHAT Y FINALIZACIÓN ---
     function mostrarFichaCompleta(c) {
         changeView('view-active-trip');
         const infoDiv = document.getElementById('info-asignada');
+        // Aquí corregimos para que muestre todos los datos del conductor
         infoDiv.innerHTML = `
             <div style="text-align:center">
-                <h3>Piloto Asignado</h3>
+                <h3>Servicio Activo</h3>
                 ${c.foto ? `<img src="${c.foto}" class="img-preview" style="margin-bottom:10px">` : ''}
-                <p><b>Nombre:</b> ${c.nombre}</p>
+                <p><b>Piloto:</b> ${c.nombre}</p>
                 <p><b>Vehículo:</b> ${c.carro}</p>
                 <p><b>Placa:</b> ${c.placa}</p>
-                <p style="font-size:1.2rem; color:green"><b>Precio: $${datosViajeLocal.oferta}</b></p>
+                <p style="font-size:1.2rem; color:green"><b>Precio Acordado: $${datosViajeLocal.oferta}</b></p>
             </div>`;
     }
 
     function iniciarChat() {
         const box = document.getElementById('chat-box');
-        box.innerHTML = ""; // Limpiar antes de abrir
-        database.ref('chats/' + tripID).off(); // Evitar duplicados
+        box.innerHTML = ""; 
+        database.ref('chats/' + tripID).off(); 
         database.ref('chats/' + tripID).on('child_added', (snap) => {
             const m = snap.val(), clase = (m.rol === rol) ? 'user' : 'driver';
             box.innerHTML += `<div class="msg ${clase}"><b>${m.nombre}:</b><br>${m.texto}</div>`;
