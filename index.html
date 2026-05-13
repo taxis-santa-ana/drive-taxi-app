@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DriveTaxi - Fix Chat & Perfil</title>
+    <title>DriveTaxi - Finalización Sincronizada</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -35,14 +35,12 @@
     <div class="header">DRIVE-TAXI</div>
 
     <div class="container">
-        <!-- VISTA: HOME -->
+        <!-- VISTAS COMUNES -->
         <div id="view-home">
             <button onclick="changeView('view-user-form')">Pedir un Viaje</button>
             <button class="btn-secondary" onclick="changeView('view-driver-login')">Entrar como Conductor</button>
-            <p style="text-align:center; font-size:0.8rem">¿No tienes cuenta? <a href="#" onclick="changeView('view-driver-reg')">Regístrate aquí</a></p>
         </div>
 
-        <!-- VISTA: LOGIN CONDUCTOR -->
         <div id="view-driver-login" class="hidden">
             <h3>Login Piloto</h3>
             <input type="text" id="l-user" placeholder="Usuario">
@@ -51,7 +49,6 @@
             <button class="btn-secondary" onclick="changeView('view-home')">Volver</button>
         </div>
 
-        <!-- VISTA: REGISTRO CONDUCTOR -->
         <div id="view-driver-reg" class="hidden">
             <h3>Registro de Piloto</h3>
             <input type="text" id="d-nombre" placeholder="Nombre Completo">
@@ -65,20 +62,18 @@
             <button class="btn-secondary" onclick="changeView('view-home')">Volver</button>
         </div>
 
-        <!-- VISTA: FORMULARIO USUARIO -->
         <div id="view-user-form" class="hidden">
             <h3>Tu solicitud de viaje</h3>
             <input type="text" id="u-nombre" placeholder="¿Cuál es tu nombre?">
             <input type="text" id="u-origen" placeholder="Origen">
             <input type="text" id="u-destino" placeholder="Destino">
-            <label>Tu oferta (Mín. $4.00):</label>
-            <input type="number" id="u-oferta" value="4.00" min="4.00">
+            <label>Tu oferta ($):</label>
+            <input type="number" id="u-oferta" value="4.00">
             <div id="ofertas-recibidas"></div>
             <button onclick="crearViaje()">Solicitar ahora</button>
             <button class="btn-secondary" onclick="changeView('view-home')">Cancelar</button>
         </div>
 
-        <!-- VISTA: PANEL CONDUCTOR -->
         <div id="view-driver-panel" class="hidden">
             <div style="display:flex; justify-content: space-between; align-items: center;">
                 <h3>Viajes Disponibles</h3>
@@ -87,7 +82,6 @@
             <div id="lista-viajes"></div>
         </div>
 
-        <!-- VISTA: VIAJE ACTIVO Y CHAT -->
         <div id="view-active-trip" class="hidden">
             <div id="info-asignada" class="card"></div>
             <div id="chat-box"></div>
@@ -95,10 +89,9 @@
                 <input type="text" id="chat-input" placeholder="Mensaje...">
                 <button style="width:70px" onclick="enviarMensaje()">OK</button>
             </div>
-            <button class="btn-secondary" style="margin-top:10px" onclick="finalizarViaje()">Finalizar Viaje y Ticket</button>
+            <button id="btn-finalizar" class="btn-secondary" style="margin-top:10px" onclick="finalizarViaje()">Finalizar Viaje</button>
         </div>
 
-        <!-- VISTA: TICKET -->
         <div id="view-ticket" class="hidden">
             <div class="ticket card">
                 <h2>RECIBO</h2>
@@ -144,6 +137,7 @@
         }
     }
 
+    // --- LÓGICA CONDUCTOR ---
     function loginConductor() {
         const user = document.getElementById('l-user').value;
         const pass = document.getElementById('l-pass').value;
@@ -168,6 +162,7 @@
         });
     }
 
+    // --- LÓGICA USUARIO ---
     function crearViaje() {
         miNombre = document.getElementById('u-nombre').value;
         const origen = document.getElementById('u-origen').value, destino = document.getElementById('u-destino').value, oferta = document.getElementById('u-oferta').value;
@@ -175,44 +170,63 @@
         const ref = database.ref('viajes_activos').push();
         tripID = ref.key; rol = "usuario";
         ref.set({ pasajero: miNombre, origen, destino, oferta, estado: "esperando" });
-        escucharOfertasYEstado();
+        escucharViaje();
     }
 
-    function escucharOfertasYEstado() {
+    function escucharViaje() {
         database.ref('viajes_activos/' + tripID).on('value', (snap) => {
             const v = snap.val();
-            if(!v) return;
+            if(!v) {
+                // Si el viaje desaparece de la DB y no estamos en ticket, es que se canceló o finalizó
+                if(datosViajeLocal.estado === "finalizado") {
+                    mostrarTicketFinal();
+                }
+                return;
+            };
+            
             datosViajeLocal = v;
+            
             if(v.estado === "esperando" && v.contraoferta) {
                 document.getElementById('ofertas-recibidas').innerHTML = `
                     <div class="card" style="border: 2px solid var(--primary)">
-                        <p><b>${v.contraoferta.nombre}</b> ofrece llevarte por <b>$${v.contraoferta.monto}</b></p>
+                        <p><b>${v.contraoferta.nombre}</b> ofrece <b>$${v.contraoferta.monto}</b></p>
                         <button onclick="aceptarContraoferta()">Aceptar Oferta</button>
                     </div>`;
             }
+            
             if(v.estado === "aceptado") { 
                 mostrarFichaCompleta(v.conductor); 
                 iniciarChat(); 
+            }
+
+            if(v.estado === "finalizado") {
+                mostrarTicketFinal();
             }
         });
     }
 
     function aceptarContraoferta() {
-        database.ref('viajes_activos/' + tripID).update({ estado: "aceptado", oferta: datosViajeLocal.contraoferta.monto, conductor: datosViajeLocal.contraoferta.datosConductor });
+        database.ref('viajes_activos/' + tripID).update({ 
+            estado: "aceptado", 
+            oferta: datosViajeLocal.contraoferta.monto, 
+            conductor: datosViajeLocal.contraoferta.datosConductor 
+        });
     }
 
+    // --- PANEL CONDUCTOR ---
     function cargarViajesDisponibles() {
         database.ref('viajes_activos').on('value', (snap) => {
             const container = document.getElementById('lista-viajes');
+            if(tripID) return; // Si ya tiene un viaje activo, no mostrar lista
             container.innerHTML = "";
             snap.forEach((child) => {
                 const v = child.val();
                 if(v.estado === "esperando") {
                     container.innerHTML += `
                         <div class="card">
-                            <p>${v.origen} → ${v.destino}</p>
+                            <p><b>De:</b> ${v.origen}<br><b>A:</b> ${v.destino}</p>
                             <span class="price-tag">$${v.oferta}</span>
-                            <button onclick="aceptarViajeDirecto('${child.key}')">Aceptar $${v.oferta}</button>
+                            <button onclick="aceptarViajeDirecto('${child.key}')">Aceptar</button>
                             <button class="btn-secondary" onclick="hacerContraoferta('${child.key}')">Contraofertar</button>
                         </div>`;
                 }
@@ -222,41 +236,40 @@
 
     function aceptarViajeDirecto(id) {
         tripID = id;
-        database.ref('viajes_activos/' + id).update({ 
-            estado: "aceptado", 
-            conductor: conductorLogueado 
-        }).then(() => {
-            database.ref('viajes_activos/' + id).once('value', s => {
-                datosViajeLocal = s.val();
-                mostrarFichaCompleta(conductorLogueado);
-                iniciarChat();
-            });
-        });
+        database.ref('viajes_activos/' + id).update({ estado: "aceptado", conductor: conductorLogueado });
+        escucharViaje(); // El conductor también escucha cambios
     }
 
     function hacerContraoferta(id) {
-        const monto = prompt("Monto de contraoferta:");
-        if(monto) database.ref('viajes_activos/' + id).update({ contraoferta: { nombre: miNombre, monto, datosConductor: conductorLogueado } });
+        const monto = prompt("Tu oferta ($):");
+        if(monto) {
+            tripID = id; // El conductor marca este ID como su viaje actual
+            database.ref('viajes_activos/' + id).update({ 
+                contraoferta: { nombre: miNombre, monto, datosConductor: conductorLogueado } 
+            });
+            escucharViaje(); // Espera a que el usuario acepte
+            alert("Contraoferta enviada. Espera la confirmación del cliente.");
+        }
     }
 
+    // --- CHAT Y VISTAS ---
     function mostrarFichaCompleta(c) {
         changeView('view-active-trip');
         const infoDiv = document.getElementById('info-asignada');
-        // Aquí corregimos para que muestre todos los datos del conductor
         infoDiv.innerHTML = `
             <div style="text-align:center">
-                <h3>Servicio Activo</h3>
-                ${c.foto ? `<img src="${c.foto}" class="img-preview" style="margin-bottom:10px">` : ''}
-                <p><b>Piloto:</b> ${c.nombre}</p>
-                <p><b>Vehículo:</b> ${c.carro}</p>
-                <p><b>Placa:</b> ${c.placa}</p>
-                <p style="font-size:1.2rem; color:green"><b>Precio Acordado: $${datosViajeLocal.oferta}</b></p>
+                ${c.foto ? `<img src="${c.foto}" class="img-preview">` : ''}
+                <h4>${c.nombre}</h4>
+                <p>${c.carro} • <b>${c.placa}</b></p>
+                <h2 style="color:green">$${datosViajeLocal.oferta}</h2>
             </div>`;
+        
+        // El botón de finalizar solo lo ve el conductor
+        document.getElementById('btn-finalizar').style.display = (rol === "conductor") ? "block" : "none";
     }
 
     function iniciarChat() {
         const box = document.getElementById('chat-box');
-        box.innerHTML = ""; 
         database.ref('chats/' + tripID).off(); 
         database.ref('chats/' + tripID).on('child_added', (snap) => {
             const m = snap.val(), clase = (m.rol === rol) ? 'user' : 'driver';
@@ -271,12 +284,26 @@
         input.value = "";
     }
 
+    // --- FINALIZACIÓN ---
     function finalizarViaje() {
+        // Marcamos como finalizado en la base de datos
+        database.ref('viajes_activos/' + tripID).update({ estado: "finalizado" });
+    }
+
+    function mostrarTicketFinal() {
         document.getElementById('t-fecha').innerText = new Date().toLocaleString();
         document.getElementById('t-ruta').innerText = `${datosViajeLocal.origen} ➔ ${datosViajeLocal.destino}`;
-        document.getElementById('t-conductor').innerText = "Piloto: " + datosViajeLocal.conductor.nombre;
+        document.getElementById('t-conductor').innerText = "Servicio: " + datosViajeLocal.conductor.nombre;
         document.getElementById('t-precio').innerText = "$" + datosViajeLocal.oferta;
-        database.ref('viajes_activos/' + tripID).remove();
+        
+        // Limpiamos Firebase después de un momento para que ambos vean el ticket
+        setTimeout(() => {
+            if(rol === "conductor") {
+                database.ref('viajes_activos/' + tripID).remove();
+                database.ref('chats/' + tripID).remove();
+            }
+        }, 2000);
+
         changeView('view-ticket');
     }
 </script>
