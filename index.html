@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DriveTaxi - Finalización Sincronizada</title>
+    <title>DriveTaxi - Sistema Completo</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -18,15 +18,16 @@
         input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
         button { background: var(--primary); color: var(--dark); border: none; font-weight: bold; cursor: pointer; }
         .btn-secondary { background: var(--dark); color: white; }
-        .btn-danger { background: #e74c3c; color: white; }
         .hidden { display: none; }
         .price-tag { font-size: 1.8rem; color: var(--accent); font-weight: bold; text-align: center; display: block; }
-        #chat-box { height: 250px; overflow-y: auto; border: 1px solid #eee; padding: 10px; background: #f9f9f9; display: flex; flex-direction: column; }
-        .msg { padding: 8px 12px; border-radius: 15px; margin: 4px 0; max-width: 80%; font-size: 0.9rem; }
+        #chat-box { height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 10px; background: #f9f9f9; display: flex; flex-direction: column; margin-top:10px; }
+        .msg { padding: 8px 12px; border-radius: 15px; margin: 4px 0; max-width: 80%; font-size: 0.8rem; }
         .msg.user { background: var(--primary); align-self: flex-end; }
         .msg.driver { background: #ddd; align-self: flex-start; }
-        .img-preview { width: 100%; height: 180px; border-radius: 8px; object-fit: cover; margin-top: 10px; background: #eee; }
-        .ticket { border: 2px dashed #333; padding: 20px; text-align: center; font-family: 'Courier New', monospace; }
+        .img-preview { width: 100%; height: 120px; border-radius: 8px; object-fit: cover; margin-top: 5px; background: #eee; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+        .disponible { background: #27ae60; color: white; }
+        .en-viaje { background: #e67e22; color: white; }
     </style>
 </head>
 <body>
@@ -35,35 +36,43 @@
     <div class="header">DRIVE-TAXI</div>
 
     <div class="container">
-        <!-- VISTAS COMUNES -->
+        <!-- VISTA HOME -->
         <div id="view-home">
             <button onclick="changeView('view-user-form')">Pedir un Viaje</button>
             <button class="btn-secondary" onclick="changeView('view-driver-login')">Entrar como Conductor</button>
         </div>
 
+        <!-- LOGIN CONDUCTOR -->
         <div id="view-driver-login" class="hidden">
             <h3>Login Piloto</h3>
             <input type="text" id="l-user" placeholder="Usuario">
             <input type="password" id="l-pass" placeholder="Contraseña">
             <button onclick="loginConductor()">Ingresar</button>
-            <button class="btn-secondary" onclick="changeView('view-home')">Volver</button>
+            <button class="btn-secondary" onclick="changeView('view-driver-reg')">Soy Conductor Nuevo (Registro)</button>
+            <button class="btn-secondary" onclick="changeView('view-home')" style="margin-top:20px">Volver</button>
         </div>
 
+        <!-- REGISTRO CONDUCTOR -->
         <div id="view-driver-reg" class="hidden">
-            <h3>Registro de Piloto</h3>
+            <h3>Registro de Piloto Nuevo</h3>
             <input type="text" id="d-nombre" placeholder="Nombre Completo">
-            <input type="text" id="d-carro" placeholder="Vehículo y Color">
-            <input type="text" id="d-placa" placeholder="Placa">
-            <input type="file" id="d-foto" accept="image/*" capture="environment" onchange="previewImage(this)">
-            <img id="preview" class="img-preview hidden">
-            <input type="text" id="d-user" placeholder="Crea tu Usuario">
-            <input type="password" id="d-pass" placeholder="Crea tu Contraseña">
-            <button onclick="registrarConductor()">Registrar y Entrar</button>
-            <button class="btn-secondary" onclick="changeView('view-home')">Volver</button>
+            <label>Foto de Perfil:</label>
+            <input type="file" id="d-foto-perfil" accept="image/*" onchange="encodeImage(this, 'perfil')">
+            
+            <input type="text" id="d-carro" placeholder="Modelo y Color del Vehículo">
+            <input type="text" id="d-placa" placeholder="Número de Placa">
+            <label>Foto del Vehículo:</label>
+            <input type="file" id="d-foto-carro" accept="image/*" onchange="encodeImage(this, 'carro')">
+            
+            <input type="text" id="d-user" placeholder="Crea un Usuario">
+            <input type="password" id="d-pass" placeholder="Crea una Contraseña">
+            <button onclick="registrarConductor()">Completar Registro</button>
+            <button class="btn-secondary" onclick="changeView('view-driver-login')">Volver</button>
         </div>
 
+        <!-- FORMULARIO USUARIO -->
         <div id="view-user-form" class="hidden">
-            <h3>Tu solicitud de viaje</h3>
+            <h3>Solicitud de Viaje</h3>
             <input type="text" id="u-nombre" placeholder="¿Cuál es tu nombre?">
             <input type="text" id="u-origen" placeholder="Origen">
             <input type="text" id="u-destino" placeholder="Destino">
@@ -74,33 +83,39 @@
             <button class="btn-secondary" onclick="changeView('view-home')">Cancelar</button>
         </div>
 
+        <!-- PANEL CONDUCTORES -->
         <div id="view-driver-panel" class="hidden">
             <div style="display:flex; justify-content: space-between; align-items: center;">
-                <h3>Viajes Disponibles</h3>
-                <button class="btn-danger" style="width:70px; font-size:0.7rem" onclick="logoutConductor()">Salir</button>
+                <h3>Panel de Pilotos</h3>
+                <button class="btn-secondary" style="width:70px; font-size:0.7rem" onclick="logoutConductor()">Salir</button>
             </div>
+            <div id="estado-pilotos" class="card" style="font-size:0.8rem">
+                <b>Pilotos en línea:</b>
+                <div id="lista-estados"></div>
+            </div>
+            <hr>
+            <h4>Viajes Disponibles</h4>
             <div id="lista-viajes"></div>
         </div>
 
+        <!-- VIAJE ACTIVO -->
         <div id="view-active-trip" class="hidden">
             <div id="info-asignada" class="card"></div>
             <div id="chat-box"></div>
-            <div style="display: flex; gap: 5px;">
-                <input type="text" id="chat-input" placeholder="Mensaje...">
+            <div style="display: flex; gap: 5px; margin-top:10px">
+                <input type="text" id="chat-input" placeholder="Escribe un mensaje...">
                 <button style="width:70px" onclick="enviarMensaje()">OK</button>
             </div>
-            <button id="btn-finalizar" class="btn-secondary" style="margin-top:10px" onclick="finalizarViaje()">Finalizar Viaje</button>
+            <button id="btn-finalizar" class="btn-secondary" style="margin-top:20px" onclick="finalizarViaje()">Finalizar Viaje</button>
         </div>
 
+        <!-- TICKET -->
         <div id="view-ticket" class="hidden">
-            <div class="ticket card">
-                <h2>RECIBO</h2>
-                <hr><p id="t-fecha"></p>
+            <div class="card" style="text-align: center;">
+                <h2>GRACIAS POR TU VIAJE</h2>
                 <p id="t-ruta"></p>
-                <p id="t-conductor"></p>
-                <hr>
-                <h1>TOTAL: <span id="t-precio"></span></h1>
-                <button onclick="location.reload()">Nuevo Viaje</button>
+                <h1 id="t-precio"></h1>
+                <button onclick="location.reload()">Cerrar</button>
             </div>
         </div>
     </div>
@@ -111,124 +126,115 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    let tripID = null, rol = "", miNombre = "", fotoBase64 = "", datosViajeLocal = {}, conductorLogueado = null;
-
-    window.onload = () => {
-        const saved = localStorage.getItem('driverData');
-        if(saved) {
-            conductorLogueado = JSON.parse(saved);
-            miNombre = conductorLogueado.nombre;
-            rol = "conductor";
-            changeView('view-driver-panel');
-            cargarViajesDisponibles();
-        }
-    }
+    let tripID = null, rol = "", miNombre = "", fotoPerfil = "", fotoCarro = "", datosViajeLocal = {}, conductorLogueado = null;
 
     function changeView(id) {
         document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
     }
 
-    function previewImage(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = e => { fotoBase64 = e.target.result; document.getElementById('preview').src = fotoBase64; document.getElementById('preview').classList.remove('hidden'); }
-            reader.readAsDataURL(input.files[0]);
-        }
+    function encodeImage(input, tipo) {
+        const reader = new FileReader();
+        reader.onload = e => { if(tipo === 'perfil') fotoPerfil = e.target.result; else fotoCarro = e.target.result; };
+        reader.readAsDataURL(input.files[0]);
     }
 
-    // --- LÓGICA CONDUCTOR ---
+    // --- CONDUCTORES ---
+    function registrarConductor() {
+        const d = { 
+            nombre: document.getElementById('d-nombre').value, 
+            carro: document.getElementById('d-carro').value, 
+            placa: document.getElementById('d-placa').value, 
+            usuario: document.getElementById('d-user').value, 
+            pass: document.getElementById('d-pass').value, 
+            foto: fotoPerfil,
+            fotoV: fotoCarro,
+            estado: "disponible"
+        };
+        database.ref('conductores/' + d.usuario).set(d).then(() => { alert("Registro exitoso"); changeView('view-driver-login'); });
+    }
+
     function loginConductor() {
         const user = document.getElementById('l-user').value;
         const pass = document.getElementById('l-pass').value;
         database.ref('conductores/' + user).once('value').then(s => {
             const d = s.val();
             if(d && d.pass === pass) {
-                localStorage.setItem('driverData', JSON.stringify(d));
                 conductorLogueado = d; miNombre = d.nombre; rol = "conductor";
-                changeView('view-driver-panel'); cargarViajesDisponibles();
-            } else { alert("Credenciales incorrectas"); }
+                actualizarEstadoPiloto("disponible");
+                changeView('view-driver-panel'); 
+                cargarViajesDisponibles();
+                escucharPilotos();
+            } else { alert("Error de acceso"); }
         });
     }
 
-    function logoutConductor() { localStorage.removeItem('driverData'); location.reload(); }
+    function actualizarEstadoPiloto(st) {
+        if(conductorLogueado) database.ref('conductores/' + conductorLogueado.usuario).update({ estado: st });
+    }
 
-    function registrarConductor() {
-        const d = { nombre: document.getElementById('d-nombre').value, carro: document.getElementById('d-carro').value, placa: document.getElementById('d-placa').value, usuario: document.getElementById('d-user').value, pass: document.getElementById('d-pass').value, foto: fotoBase64 };
-        database.ref('conductores/' + d.usuario).set(d).then(() => {
-            localStorage.setItem('driverData', JSON.stringify(d));
-            conductorLogueado = d; miNombre = d.nombre; rol = "conductor";
-            changeView('view-driver-panel'); cargarViajesDisponibles();
+    function escucharPilotos() {
+        database.ref('conductores').on('value', snap => {
+            const list = document.getElementById('lista-estados');
+            list.innerHTML = "";
+            snap.forEach(c => {
+                const p = c.val();
+                const clase = p.estado === 'disponible' ? 'disponible' : 'en-viaje';
+                list.innerHTML += `<p>${p.nombre} <span class="badge ${clase}">${p.estado.toUpperCase()}</span></p>`;
+            });
         });
     }
 
-    // --- LÓGICA USUARIO ---
+    // --- USUARIO ---
     function crearViaje() {
         miNombre = document.getElementById('u-nombre').value;
-        const origen = document.getElementById('u-origen').value, destino = document.getElementById('u-destino').value, oferta = document.getElementById('u-oferta').value;
-        if(!miNombre || !origen || !destino) return alert("Datos incompletos");
         const ref = database.ref('viajes_activos').push();
         tripID = ref.key; rol = "usuario";
-        ref.set({ pasajero: miNombre, origen, destino, oferta, estado: "esperando" });
+        ref.set({ 
+            pasajero: miNombre, 
+            origen: document.getElementById('u-origen').value, 
+            destino: document.getElementById('u-destino').value, 
+            oferta: document.getElementById('u-oferta').value, 
+            estado: "esperando" 
+        });
         escucharViaje();
     }
 
     function escucharViaje() {
-        database.ref('viajes_activos/' + tripID).on('value', (snap) => {
+        database.ref('viajes_activos/' + tripID).on('value', snap => {
             const v = snap.val();
-            if(!v) {
-                // Si el viaje desaparece de la DB y no estamos en ticket, es que se canceló o finalizó
-                if(datosViajeLocal.estado === "finalizado") {
-                    mostrarTicketFinal();
-                }
-                return;
-            };
-            
+            if(!v) return;
             datosViajeLocal = v;
-            
             if(v.estado === "esperando" && v.contraoferta) {
-                document.getElementById('ofertas-recibidas').innerHTML = `
-                    <div class="card" style="border: 2px solid var(--primary)">
-                        <p><b>${v.contraoferta.nombre}</b> ofrece <b>$${v.contraoferta.monto}</b></p>
-                        <button onclick="aceptarContraoferta()">Aceptar Oferta</button>
-                    </div>`;
+                document.getElementById('ofertas-recibidas').innerHTML = `<button onclick="aceptarContraoferta()">Aceptar Oferta $${v.contraoferta.monto}</button>`;
             }
-            
             if(v.estado === "aceptado") { 
                 mostrarFichaCompleta(v.conductor); 
                 iniciarChat(); 
             }
-
-            if(v.estado === "finalizado") {
-                mostrarTicketFinal();
-            }
+            if(v.estado === "finalizado") changeView('view-ticket');
         });
     }
 
     function aceptarContraoferta() {
         database.ref('viajes_activos/' + tripID).update({ 
-            estado: "aceptado", 
-            oferta: datosViajeLocal.contraoferta.monto, 
-            conductor: datosViajeLocal.contraoferta.datosConductor 
+            estado: "aceptado", oferta: datosViajeLocal.contraoferta.monto, conductor: datosViajeLocal.contraoferta.datosConductor 
         });
     }
 
-    // --- PANEL CONDUCTOR ---
+    // --- LÓGICA DE VIAJE ---
     function cargarViajesDisponibles() {
-        database.ref('viajes_activos').on('value', (snap) => {
+        database.ref('viajes_activos').on('value', snap => {
             const container = document.getElementById('lista-viajes');
-            if(tripID) return; // Si ya tiene un viaje activo, no mostrar lista
+            if(tripID) return;
             container.innerHTML = "";
-            snap.forEach((child) => {
+            snap.forEach(child => {
                 const v = child.val();
                 if(v.estado === "esperando") {
-                    container.innerHTML += `
-                        <div class="card">
-                            <p><b>De:</b> ${v.origen}<br><b>A:</b> ${v.destino}</p>
-                            <span class="price-tag">$${v.oferta}</span>
-                            <button onclick="aceptarViajeDirecto('${child.key}')">Aceptar</button>
-                            <button class="btn-secondary" onclick="hacerContraoferta('${child.key}')">Contraofertar</button>
-                        </div>`;
+                    container.innerHTML += `<div class="card">
+                        ${v.origen} -> ${v.destino} ($${v.oferta})
+                        <button onclick="aceptarViajeDirecto('${child.key}')">Tomar Viaje</button>
+                    </div>`;
                 }
             });
         });
@@ -236,75 +242,48 @@
 
     function aceptarViajeDirecto(id) {
         tripID = id;
+        actualizarEstadoPiloto("en viaje");
         database.ref('viajes_activos/' + id).update({ estado: "aceptado", conductor: conductorLogueado });
-        escucharViaje(); // El conductor también escucha cambios
+        escucharViaje();
     }
 
-    function hacerContraoferta(id) {
-        const monto = prompt("Tu oferta ($):");
-        if(monto) {
-            tripID = id; // El conductor marca este ID como su viaje actual
-            database.ref('viajes_activos/' + id).update({ 
-                contraoferta: { nombre: miNombre, monto, datosConductor: conductorLogueado } 
-            });
-            escucharViaje(); // Espera a que el usuario acepte
-            alert("Contraoferta enviada. Espera la confirmación del cliente.");
-        }
-    }
-
-    // --- CHAT Y VISTAS ---
     function mostrarFichaCompleta(c) {
         changeView('view-active-trip');
-        const infoDiv = document.getElementById('info-asignada');
-        infoDiv.innerHTML = `
+        const info = document.getElementById('info-asignada');
+        info.innerHTML = `
             <div style="text-align:center">
-                ${c.foto ? `<img src="${c.foto}" class="img-preview">` : ''}
+                <p style="color:green; font-weight:bold">¡Su conductor asignado va en camino!</p>
+                <div style="display:flex; gap:10px; justify-content:center">
+                    <div><img src="${c.foto}" class="img-preview" style="width:80px;height:80px;border-radius:50%"><br><small>Piloto</small></div>
+                    <div><img src="${c.fotoV}" class="img-preview" style="width:120px;height:80px"><br><small>Vehículo</small></div>
+                </div>
                 <h4>${c.nombre}</h4>
-                <p>${c.carro} • <b>${c.placa}</b></p>
-                <h2 style="color:green">$${datosViajeLocal.oferta}</h2>
+                <p>${c.carro} | <b>${c.placa}</b></p>
             </div>`;
-        
-        // El botón de finalizar solo lo ve el conductor
         document.getElementById('btn-finalizar').style.display = (rol === "conductor") ? "block" : "none";
     }
 
     function iniciarChat() {
-        const box = document.getElementById('chat-box');
-        database.ref('chats/' + tripID).off(); 
-        database.ref('chats/' + tripID).on('child_added', (snap) => {
+        database.ref('chats/' + tripID).on('child_added', snap => {
             const m = snap.val(), clase = (m.rol === rol) ? 'user' : 'driver';
-            box.innerHTML += `<div class="msg ${clase}"><b>${m.nombre}:</b><br>${m.texto}</div>`;
-            box.scrollTop = box.scrollHeight;
+            document.getElementById('chat-box').innerHTML += `<div class="msg ${clase}"><b>${m.nombre}:</b><br>${m.texto}</div>`;
         });
     }
 
     function enviarMensaje() {
         const input = document.getElementById('chat-input');
-        if(input.value) database.ref('chats/' + tripID).push({ nombre: miNombre, rol, texto: input.value });
+        database.ref('chats/' + tripID).push({ nombre: miNombre, rol, texto: input.value });
         input.value = "";
     }
 
-    // --- FINALIZACIÓN ---
     function finalizarViaje() {
-        // Marcamos como finalizado en la base de datos
+        actualizarEstadoPiloto("disponible");
         database.ref('viajes_activos/' + tripID).update({ estado: "finalizado" });
     }
 
-    function mostrarTicketFinal() {
-        document.getElementById('t-fecha').innerText = new Date().toLocaleString();
-        document.getElementById('t-ruta').innerText = `${datosViajeLocal.origen} ➔ ${datosViajeLocal.destino}`;
-        document.getElementById('t-conductor').innerText = "Servicio: " + datosViajeLocal.conductor.nombre;
-        document.getElementById('t-precio').innerText = "$" + datosViajeLocal.oferta;
-        
-        // Limpiamos Firebase después de un momento para que ambos vean el ticket
-        setTimeout(() => {
-            if(rol === "conductor") {
-                database.ref('viajes_activos/' + tripID).remove();
-                database.ref('chats/' + tripID).remove();
-            }
-        }, 2000);
-
-        changeView('view-ticket');
+    function logoutConductor() {
+        actualizarEstadoPiloto("offline");
+        location.reload();
     }
 </script>
 </body>
