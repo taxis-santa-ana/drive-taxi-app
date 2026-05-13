@@ -5,14 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Drive Taxi SA</title>
     
-    <!-- CONFIGURACIÓN PWA CON TU NUEVO LOGO -->
-    <meta name="theme-color" content="#fbbf24">
+    <!-- PWA CONFIG -->
+    <meta name="theme-color" content="#3366FF">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <!-- Referencias al nuevo logo 1535791.png -->
-    <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="1535791.png">
     <link rel="apple-touch-icon" href="1535791.png">
 
@@ -23,87 +19,154 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        :root { --taxi: #fbbf24; --dark: #1f2937; --green: #22c55e; --blue: #3b82f6; --red: #ef4444; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f3f4f6; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin: 10px; }
-        #map-user, #map-driver { height: 350px; width: 100%; border-radius: 12px; margin-bottom: 10px; z-index: 1; border: 2px solid #ddd; }
-        button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: var(--taxi); font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; transition: 0.2s; }
-        button:active { transform: scale(0.96); }
-        .hidden { display: none; }
-        .btn-blue { background: var(--blue); color: white; }
-        .btn-red { background: var(--red); color: white; }
-        .info-ruta { background: #e0f2fe; padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 10px; border-left: 5px solid var(--blue); }
-        .img-preview { width: 65px; height: 65px; border-radius: 50%; object-fit: cover; border: 2px solid var(--taxi); }
-        .header-bar { background: var(--dark); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        :root { 
+            --waze-blue: #3366FF; 
+            --waze-baby: #B2D8FF;
+            --dark: #202124; 
+            --green: #00D37F; 
+            --white: #FFFFFF;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: #F2F4F7; 
+            margin: 0; 
+            color: var(--dark);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .card { 
+            background: var(--white); 
+            padding: 25px; 
+            border-radius: 24px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
+            margin: 15px;
+            border: 1px solid #E9EDF0;
+        }
+
+        #map-user, #map-driver { 
+            height: 380px; 
+            width: 100%; 
+            border-radius: 20px; 
+            margin-bottom: 15px; 
+            z-index: 1;
+            border: 1px solid #ddd;
+        }
+
+        input {
+            width: 100%;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 16px;
+            border: 2px solid #E9EDF0;
+            font-size: 18px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        button { 
+            width: 100%; 
+            padding: 20px; 
+            border-radius: 20px; 
+            border: none; 
+            background: var(--waze-blue); 
+            color: white;
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 18px; 
+            margin-top: 10px; 
+            box-shadow: 0 4px 12px rgba(51, 102, 255, 0.2);
+        }
+
+        button:active { transform: scale(0.98); }
+        .hidden { display: none !important; }
+        .btn-outline { background: #E9EDF0; color: var(--dark); box-shadow: none; }
+        
+        .info-bubble {
+            background: var(--waze-baby);
+            padding: 15px;
+            border-radius: 16px;
+            font-size: 15px;
+            margin-bottom: 15px;
+            color: #003366;
+            text-align: center;
+        }
+
+        .header-bar { 
+            background: var(--white); 
+            padding: 15px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid #E9EDF0;
+        }
+
+        .logo-main {
+            width: 130px;
+            height: 130px;
+            margin-bottom: 20px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
     </style>
 </head>
 <body>
 
     <div id="app">
-        <!-- PANTALLA INICIAL CON TU NUEVO LOGO -->
+        <!-- PANTALLA DE INICIO -->
         <div id="screen-start" style="text-align:center; padding-top:60px;">
-            <img src="1535791.png" width="120" style="margin-bottom:20px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
-            <h1>Drive Taxi SA</h1>
+            <img src="1535791.png" class="logo-main" alt="Logo Drive Taxi">
+            <h1 style="font-weight: 800;">Drive Taxi SA</h1>
             <div style="padding: 20px;">
-                <button onclick="initUserFlow()">PEDIR TAXI (MAPA)</button>
-                <button onclick="checkDriverSession()" style="background:#e5e7eb;">MODO CONDUCTOR</button>
+                <button onclick="initUserFlow()">PEDIR UN VIAJE</button>
+                <button onclick="loginConductor()" class="btn-outline" style="margin-top:20px;">MODO CONDUCTOR</button>
             </div>
         </div>
 
         <!-- FLUJO USUARIO -->
         <div id="screen-user" class="hidden">
             <div class="card">
-                <h3 id="step-title">📍 Paso 1: Tu ubicación</h3>
+                <h2 id="step-title" style="margin:0 0 10px 0;">📍 Ubicación</h2>
                 <div id="map-user"></div>
-                <div id="route-info" class="info-ruta">Toca el mapa para indicar dónde te recogemos.</div>
+                <div id="route-info" class="info-bubble">Toca el mapa para marcar el origen</div>
                 
-                <input type="text" id="u-nombre" placeholder="Nombre completo">
-                <input type="number" id="u-oferta" placeholder="Tu oferta sugerida ($)">
+                <input type="text" id="u-nombre" placeholder="Tu Nombre">
+                <input type="number" id="u-oferta" placeholder="Tu Oferta ($)">
                 
-                <button id="btn-next" onclick="toggleSelectionMode()" class="btn-blue">CONTINUAR AL DESTINO</button>
-                <button id="btn-send" onclick="enviarPedidoConMapa()" class="hidden" style="background:var(--green); color:white;">ENVIAR SOLICITUD</button>
-                <button onclick="softReset()" style="background:none; color:gray;">Volver al inicio</button>
+                <button id="btn-next" onclick="toggleSelectionMode()">SIGUIENTE: DESTINO</button>
+                <button id="btn-send" onclick="enviarPedidoConMapa()" class="hidden" style="background:var(--green);">SOLICITAR AHORA</button>
+                <button onclick="location.reload()" class="btn-outline">VOLVER</button>
             </div>
         </div>
 
-        <!-- ESPERA USUARIO -->
+        <!-- PANTALLA DE ESPERA -->
         <div id="screen-wait" class="hidden">
             <div class="card" style="text-align:center;">
-                <h2 id="u-status">Buscando Taxi...</h2>
-                <div id="u-ficha" class="hidden" style="background:#f9fafb; padding:15px; border-radius:10px; margin-bottom:15px;">
-                    <img id="u-c-foto" class="img-preview">
-                    <h3 id="u-c-nombre" style="margin:10px 0 5px 0;"></h3>
-                    <p id="u-c-carro" style="color:gray; font-size:14px;"></p>
-                    <button onclick="abrirNavegadorApp()" class="btn-blue">VER RUTA GPS</button>
-                </div>
-                <button onclick="cancelarPedido()" class="btn-red">CANCELAR VIAJE</button>
+                <div class="info-bubble">🚕 Buscando conductor...</div>
+                <h2 id="u-status">Esperando...</h2>
+                <button onclick="cancelarPedido()" style="background:#FF4B4B; margin-top:20px;">CANCELAR</button>
             </div>
         </div>
 
         <!-- PANEL CONDUCTOR -->
         <div id="screen-driver" class="hidden">
             <div class="header-bar">
-                <span>Hola, <b id="d-label"></b></span>
-                <button onclick="cerrarSesion()" style="width:auto; padding:5px 10px; background:var(--red); font-size:11px; margin:0;">SALIR</button>
+                <span style="font-weight:bold;">Conductor: <span id="d-label" style="color:var(--waze-blue);"></span></span>
+                <button onclick="cerrarSesion()" style="width:auto; padding:10px; font-size:12px; margin:0; background:#FF4B4B;">SALIR</button>
             </div>
             <div id="d-pedidos"></div>
             <div id="d-viaje-activo" class="hidden">
                 <div class="card">
-                    <h3 style="margin-top:0;">Viaje en curso</h3>
+                    <h3>Viaje en Curso</h3>
                     <div id="map-driver"></div>
-                    <div class="info-ruta">
-                        Pasajero: <b id="d-v-cliente"></b><br>
-                        Pago: <b id="d-v-oferta"></b>
-                    </div>
-                    <button onclick="abrirNavegadorApp()" class="btn-blue">🧭 NAVEGAR CON GOOGLE MAPS</button>
-                    <div id="d-controles" style="margin-top:15px;"></div>
+                    <button onclick="abrirNavegadorApp()">NAVEGAR (MAPS)</button>
+                    <div id="d-controles" style="margin-top:10px;"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // CONFIGURACIÓN FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyDgIX4jKwyQcfaTSP0QXAdIAR7UzrQMK3g",
             authDomain: "drive-taxi-baad8.firebaseapp.com",
@@ -119,39 +182,48 @@
         let coordsOri = null, coordsDes = null;
         let selectionMode = 'origen';
         let currentTripId = null;
-        let driverData = null;
 
         function showScreen(id) {
             document.querySelectorAll('#app > div').forEach(s => s.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         }
 
+        // LOGIN CONDUCTOR ACTUALIZADO
+        function loginConductor() {
+            const user = prompt("Usuario:");
+            if (user === "Administrador") {
+                const pass = prompt("Contraseña:");
+                if (pass === "Taber2026%") {
+                    localStorage.setItem('taxi_session', 'active');
+                    initDriverPanel();
+                } else { alert("Error de credenciales"); }
+            } else if (user !== null) { alert("Usuario no reconocido"); }
+        }
+
         function initUserFlow() {
             showScreen('screen-user');
             if (!mapU) {
-                mapU = L.map('map-user').setView([13.97, -89.56], 13);
+                mapU = L.map('map-user', {zoomControl: false}).setView([13.97, -89.56], 15);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapU);
                 mapU.on('click', e => {
                     if (selectionMode === 'origen') {
                         coordsOri = e.latlng;
                         if (markerOri) mapU.removeLayer(markerOri);
                         markerOri = L.marker(coordsOri).addTo(mapU);
-                        document.getElementById('route-info').innerText = "Origen listo. Presiona continuar.";
                     } else {
                         coordsDes = e.latlng;
                         if (markerDes) mapU.removeLayer(markerDes);
-                        markerDes = L.marker(coordsDes, {icon: L.icon({iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', iconSize: [25, 41], iconAnchor: [12, 41]})}).addTo(mapU);
-                        document.getElementById('route-info').innerText = "Destino listo. Ya puedes solicitar.";
+                        markerDes = L.marker(coordsDes).addTo(mapU);
                     }
                 });
             }
-            navigator.geolocation.getCurrentPosition(p => mapU.setView([p.coords.latitude, p.coords.longitude], 15));
         }
 
         function toggleSelectionMode() {
-            if (!coordsOri) return alert("Marca primero el punto de recogida");
+            if (!coordsOri) return alert("Marca el origen en el mapa");
             selectionMode = 'destino';
-            document.getElementById('step-title').innerText = "🏁 Paso 2: Tu destino";
+            document.getElementById('step-title').innerText = "🏁 Destino";
+            document.getElementById('route-info').innerText = "Marca ahora a dónde vas";
             document.getElementById('btn-next').classList.add('hidden');
             document.getElementById('btn-send').classList.remove('hidden');
         }
@@ -159,87 +231,41 @@
         function enviarPedidoConMapa() {
             const nom = document.getElementById('u-nombre').value;
             const ofe = document.getElementById('u-oferta').value;
-            if(!nom || !ofe || !coordsDes) return alert("Faltan datos o marcar destino");
-            currentTripId = "T-" + Date.now();
-            db.ref('viajes/' + currentTripId).set({ cliente: nom, oferta: ofe, estado: 'buscando', latOri: coordsOri.lat, lngOri: coordsOri.lng, latDes: coordsDes.lat, lngDes: coordsDes.lng });
+            if(!nom || !ofe || !coordsDes) return alert("Faltan datos");
+            currentTripId = "ID-" + Date.now();
+            db.ref('viajes/' + currentTripId).set({
+                cliente: nom, oferta: ofe, estado: 'buscando',
+                latOri: coordsOri.lat, lngOri: coordsOri.lng,
+                latDes: coordsDes.lat, lngDes: coordsDes.lng
+            });
             showScreen('screen-wait');
-            escucharViaje();
-        }
-
-        function checkDriverSession() {
-            const saved = localStorage.getItem('taxi_driver_v2');
-            if(saved) { driverData = JSON.parse(saved); initDriverPanel(); }
-            else {
-                const p = prompt("Acceso Conductor:");
-                if(p === "Taber2026%") {
-                    driverData = { nombre: "Chofer", foto: "1535791.png", tel: "70000000", carro: "Taxi" };
-                    localStorage.setItem('taxi_driver_v2', JSON.stringify(driverData));
-                    initDriverPanel();
-                }
-            }
         }
 
         function initDriverPanel() {
             showScreen('screen-driver');
-            document.getElementById('d-label').innerText = driverData.nombre;
+            document.getElementById('d-label').innerText = "Administrador";
             db.ref('viajes').on('value', snap => {
                 const list = document.getElementById('d-pedidos');
                 list.innerHTML = "";
-                let activo = false;
                 snap.forEach(child => {
                     const v = child.val();
                     if(v.estado === 'buscando') {
-                        list.innerHTML += `<div class="card"><p><b>${v.cliente}</b> • $${v.oferta}</p><button onclick="aceptarViaje('${child.key}')" class="btn-blue">ACEPTAR</button></div>`;
-                    } else if(v.cond === driverData.nombre && v.estado !== 'finalizado') {
-                        activo = true; renderViajeConductor(child.key, v);
+                        list.innerHTML += `<div class="card">
+                            <p>👤 <b>${v.cliente}</b> ofrece <b>$${v.oferta}</b></p>
+                            <button onclick="aceptarViaje('${child.key}')">ACEPTAR</button>
+                        </div>`;
                     }
                 });
-                if(activo) list.classList.add('hidden');
-                else { list.classList.remove('hidden'); document.getElementById('d-viaje-activo').classList.add('hidden'); }
             });
         }
 
-        function renderViajeConductor(id, v) {
-            currentTripId = id;
-            document.getElementById('d-viaje-activo').classList.remove('hidden');
-            document.getElementById('d-v-cliente').innerText = v.cliente;
-            document.getElementById('d-v-oferta').innerText = "$" + v.oferta;
-            if(!mapD) {
-                mapD = L.map('map-driver').setView([v.latOri, v.lngOri], 14);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapD);
-            }
-            mapD.eachLayer(l => { if(l instanceof L.Marker) mapD.removeLayer(l); });
-            L.marker([v.latOri, v.lngOri]).addTo(mapD).bindPopup("Recogida").openPopup();
-            L.marker([v.latDes, v.lngDes], {icon: L.icon({iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', iconSize: [25, 41]})}).addTo(mapD);
-            
-            const ctrl = document.getElementById('d-controles');
-            if(v.estado === 'aceptado') ctrl.innerHTML = `<button onclick="cambiarEstado('${id}','abordo')" class="btn-blue">YA ESTÁ A BORDO</button>`;
-            else if(v.estado === 'abordo') ctrl.innerHTML = `<button onclick="finalizarViaje('${id}')" class="btn-red">FINALIZAR VIAJE</button>`;
+        function aceptarViaje(id) {
+            db.ref('viajes/' + id).update({ estado: 'aceptado', cond: 'Administrador' });
+            alert("Viaje aceptado");
         }
 
-        function aceptarViaje(id) { db.ref('viajes/' + id).update({ estado: 'aceptado', cond: driverData.nombre, c_foto: driverData.foto, c_tel: driverData.tel, c_carro: driverData.carro }); }
-        
-        function abrirNavegadorApp() {
-            db.ref('viajes/' + currentTripId).once('value', s => {
-                const v = s.val();
-                const lat = v.estado === 'abordo' ? v.latDes : v.latOri;
-                const lng = v.estado === 'abordo' ? v.lngDes : v.lngOri;
-                window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`, '_blank');
-            });
-        }
-
-        function finalizarViaje(id) { db.ref('viajes/' + id).update({ estado: 'finalizado' }); }
-        function softReset() { if(currentTripId) db.ref('viajes/' + currentTripId).off(); location.reload(); }
-        function escucharViaje() {
-            db.ref('viajes/' + currentTripId).on('value', snap => {
-                const v = snap.val(); if(!v) return;
-                if(v.estado === 'aceptado') { document.getElementById('u-status').innerText = "Taxi en camino"; document.getElementById('u-ficha').classList.remove('hidden'); document.getElementById('u-c-nombre').innerText = v.cond; document.getElementById('u-c-foto').src = v.c_foto; }
-                if(v.estado === 'finalizado') { alert("Viaje terminado"); softReset(); }
-            });
-        }
-        function cambiarEstado(id, est) { db.ref('viajes/' + id).update({ estado: est }); }
         function cerrarSesion() { localStorage.clear(); location.reload(); }
-        function cancelarPedido() { if(confirm("¿Cancelar?")) { db.ref('viajes/' + currentTripId).remove(); softReset(); } }
+        function cancelarPedido() { db.ref('viajes/' + currentTripId).remove(); location.reload(); }
     </script>
 </body>
 </html>
