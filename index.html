@@ -14,13 +14,16 @@
         body { font-family: 'Segoe UI', sans-serif; background: #F2F4F7; margin: 0; color: var(--dark); }
         .card { background: var(--white); padding: 20px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); margin: 15px; }
         input { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 12px; border: 1px solid #ddd; box-sizing: border-box; }
-        button { width: 100%; padding: 18px; border-radius: 15px; border: none; background: var(--waze-blue); color: white; font-weight: bold; cursor: pointer; }
+        button { width: 100%; padding: 18px; border-radius: 15px; border: none; background: var(--waze-blue); color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
         .hidden { display: none !important; }
         .btn-cancel { background: var(--red); margin-top: 10px; }
         .btn-negotiate { background: var(--yellow); color: var(--dark); margin-top: 5px; }
-        .chat-box { height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 10px; margin-bottom: 10px; }
-        .msg.me { text-align: right; color: var(--waze-blue); }
-        .profile-img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
+        .chat-box { height: 200px; overflow-y: auto; background: #f1f3f4; padding: 10px; border-radius: 10px; margin-bottom: 10px; display: flex; flex-direction: column; }
+        .msg { margin: 5px 0; padding: 8px 12px; border-radius: 15px; max-width: 80%; font-size: 14px; }
+        .msg.me { align-self: flex-end; background: var(--waze-blue); color: white; border-bottom-right-radius: 2px; }
+        .msg.other { align-self: flex-start; background: #e0e0e0; color: black; border-bottom-left-radius: 2px; }
+        .profile-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid var(--green); }
     </style>
 </head>
 <body onload="checkSession()">
@@ -28,88 +31,100 @@
     <div id="app">
         <!-- PANTALLA INICIAL -->
         <div id="screen-start" style="text-align:center; padding-top:60px;">
-            <h1 style="font-weight: 800;">Driver Santa Ana</h1>
-            <p>Transporte local seguro</p>
+            <h1 style="font-weight: 800; font-size: 32px;">Driver Santa Ana</h1>
+            <p style="color: gray;">Tu transporte local confiable</p>
             <div style="padding: 20px;">
                 <button onclick="showScreen('screen-user-form')">SOLICITAR VIAJE</button>
-                <button onclick="showScreen('screen-login')" style="background:#E9EDF0; color:#202124; margin-top:10px;">CONDUCTORES</button>
+                <button onclick="showScreen('screen-login')" style="background:#E9EDF0; color:#202124; margin-top:10px;">ACCESO CONDUCTORES</button>
             </div>
         </div>
 
         <!-- FORMULARIO USUARIO -->
         <div id="screen-user-form" class="hidden">
             <div class="card">
-                <h2>Detalles del Viaje</h2>
+                <h2>¿A dónde vamos hoy?</h2>
                 <input type="text" id="u-nombre" placeholder="Tu nombre">
-                <input type="text" id="u-origen" placeholder="Punto de salida">
-                <input type="text" id="u-destino" placeholder="Destino">
+                <input type="text" id="u-origen" placeholder="¿Dónde te recogemos?">
+                <input type="text" id="u-destino" placeholder="¿A dónde vas?">
                 <input type="number" id="u-oferta" placeholder="Tu oferta inicial $">
-                <button onclick="enviarPedido()" style="background:var(--green);">BUSCAR CONDUCTOR</button>
-                <button onclick="location.reload()" style="background:none; color:gray; margin-top:10px;">Volver</button>
+                <button onclick="enviarPedido()" style="background:var(--green);">BUSCAR CONDUCTORES</button>
+                <button onclick="location.reload()" style="background:none; color:gray; margin-top:10px;">Cancelar</button>
             </div>
         </div>
 
-        <!-- NEGOCIACIÓN Y ESPERA USUARIO -->
+        <!-- ESPERA USUARIO Y CHAT -->
         <div id="screen-user-wait" class="hidden">
             <div class="card">
                 <div id="wait-ui">
-                    <h3 style="text-align:center;">Esperando propuestas...</h3>
+                    <h3 style="text-align:center;">Esperando ofertas...</h3>
                     <div id="lista-contraofertas"></div>
                 </div>
 
                 <div id="active-trip-user" class="hidden">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <img id="view-d-foto" class="profile-img">
+                    <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+                        <img id="view-d-foto" class="profile-img" src="">
                         <div>
-                            <b id="view-d-nombre"></b><br>
-                            <small id="view-d-vehi"></small>
+                            <b id="view-d-nombre" style="font-size:18px;"></b><br>
+                            <small id="view-d-vehi" style="color:gray;"></small>
                         </div>
                     </div>
-                    <div id="chat-user" class="chat-box" style="margin-top:15px;"></div>
-                    <input type="text" id="input-chat-user" placeholder="Mensaje...">
-                    <button onclick="enviarMensaje('user')" style="padding:10px;">Enviar</button>
+                    <div id="chat-user" class="chat-box"></div>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="input-chat-user" placeholder="Escribe un mensaje...">
+                        <button onclick="enviarMensaje('user')" style="width:80px; padding:0;">Enviar</button>
+                    </div>
                 </div>
-                <button onclick="cancelarViajeUsuario()" class="btn-cancel">CANCELAR PEDIDO</button>
+                <button onclick="cancelarViajeUsuario()" class="btn-cancel">CANCELAR VIAJE</button>
             </div>
         </div>
 
         <!-- PANEL CONDUCTOR -->
         <div id="screen-driver" class="hidden">
-            <div class="card">Hola, <b id="d-label"></b></div>
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Socio: <b id="d-label"></b></span>
+                <button onclick="cerrarSesion()" style="width:auto; padding:5px 15px; font-size:12px; background:var(--red);">SALIR</button>
+            </div>
+            
             <div id="d-pedidos"></div>
+
             <div id="d-activo" class="hidden card">
                 <h3 style="color:var(--green);">Viaje en Curso</h3>
+                <p id="info-cliente-d" style="font-size:14px; border-bottom:1px solid #eee; padding-bottom:10px;"></p>
                 <div id="chat-driver" class="chat-box"></div>
-                <input type="text" id="input-chat-driver" placeholder="Mensaje...">
-                <button onclick="enviarMensaje('driver')" style="padding:10px; margin-bottom:5px;">Enviar</button>
-                <button onclick="finalizarViaje()" style="background:var(--green);">FINALIZAR</button>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="input-chat-driver" placeholder="Mensaje al cliente...">
+                    <button onclick="enviarMensaje('driver')" style="width:80px; padding:0;">Enviar</button>
+                </div>
+                <button onclick="finalizarViaje()" style="background:var(--green); margin-top:15px;">FINALIZAR VIAJE</button>
                 <button onclick="cancelarViajeConductor()" class="btn-cancel">CANCELAR Y REASIGNAR</button>
             </div>
         </div>
 
-        <!-- LOGIN / REGISTRO (Mismo que el anterior) -->
+        <!-- LOGIN / REGISTRO -->
         <div id="screen-login" class="hidden">
             <div class="card">
-                <h2>Ingreso</h2>
+                <h2>Login Conductor</h2>
                 <input type="text" id="l-user" placeholder="Usuario">
-                <input type="password" id="l-pass" placeholder="Clave">
+                <input type="password" id="l-pass" placeholder="Contraseña">
                 <button onclick="intentarLogin()">ENTRAR</button>
-                <button onclick="showScreen('screen-register')" style="margin-top:10px;">REGISTRARSE</button>
+                <button onclick="showScreen('screen-register')" style="background:#E9EDF0; color:black; margin-top:10px;">REGISTRARSE</button>
+                <button onclick="location.reload()" style="background:none; color:gray; margin-top:5px;">Volver</button>
             </div>
         </div>
 
         <div id="screen-register" class="hidden">
             <div class="card">
-                <h3>Registro Socio</h3>
-                <input type="text" id="r-nombre" placeholder="Nombre">
+                <h3>Registro de Socio</h3>
+                <input type="text" id="r-nombre" placeholder="Nombre completo">
                 <input type="text" id="r-user" placeholder="Usuario">
-                <input type="password" id="r-pass" placeholder="Clave">
-                <input type="text" id="r-placa" placeholder="Placa">
-                <input type="text" id="r-modelo" placeholder="Vehículo">
-                <input type="text" id="r-color" placeholder="Color">
+                <input type="password" id="r-pass" placeholder="Contraseña">
+                <input type="text" id="r-placa" placeholder="Número de Placa">
+                <input type="text" id="r-modelo" placeholder="Modelo del Vehículo">
+                <input type="text" id="r-color" placeholder="Color del Vehículo">
+                <label style="font-size:12px;">Foto del Conductor (Selfie):</label>
                 <input type="file" id="r-foto" accept="image/*">
-                <p style="font-size:10px;">Acepto los términos de servicio de Driver Santa Ana.</p>
                 <button onclick="registrarConductor()">CREAR CUENTA</button>
+                <button onclick="showScreen('screen-login')" style="background:none; color:gray;">Cancelar</button>
             </div>
         </div>
     </div>
@@ -133,7 +148,7 @@
             document.getElementById(id).classList.remove('hidden');
         };
 
-        // --- USUARIO ---
+        // --- LÓGICA USUARIO ---
         window.enviarPedido = () => {
             const v = {
                 cliente: document.getElementById('u-nombre').value,
@@ -142,43 +157,47 @@
                 oferta: document.getElementById('u-oferta').value,
                 estado: 'buscando'
             };
+            if(!v.cliente || !v.origen || !v.destino || !v.oferta) return alert("Completa los datos");
+            
             currentViajeId = "V-" + Date.now();
             db.ref('viajes/' + currentViajeId).set(v);
             showScreen('screen-user-wait');
-            escucharViaje();
+            escucharEstadoViaje();
         };
 
-        function escucharViaje() {
+        function escucharEstadoViaje() {
             db.ref('viajes/' + currentViajeId).on('value', snap => {
                 const v = snap.val();
                 if(!v) return;
 
                 const lista = document.getElementById('lista-contraofertas');
-                lista.innerHTML = "";
-
-                if(v.contraofertas && v.estado === 'buscando') {
-                    Object.keys(v.contraofertas).forEach(key => {
-                        const co = v.contraofertas[key];
-                        lista.innerHTML += `
-                            <div class="card" style="border:1px solid var(--yellow); margin:5px 0;">
-                                <p><b>${co.nombre}</b> propone <b>$${co.monto}</b></p>
-                                <button onclick="aceptarOferta('${key}', '${co.monto}', '${co.user}')" style="background:var(--green); padding:10px;">ACEPTAR</button>
-                            </div>`;
-                    });
+                
+                if(v.estado === 'buscando') {
+                    lista.innerHTML = "";
+                    if(v.contraofertas) {
+                        Object.keys(v.contraofertas).forEach(key => {
+                            const co = v.contraofertas[key];
+                            lista.innerHTML += `
+                                <div class="card" style="border:1.5px solid var(--yellow); margin:10px 0; padding:15px;">
+                                    <p><b>${co.nombre}</b> ofrece llevarte por <b>$${co.monto}</b></p>
+                                    <button onclick="confirmarConductor('${key}', '${co.monto}', '${co.user}')" style="background:var(--green); padding:12px;">ACEPTAR ESTA OFERTA</button>
+                                </div>`;
+                        });
+                    }
                 }
 
                 if(v.estado === 'aceptado') {
                     document.getElementById('wait-ui').classList.add('hidden');
                     document.getElementById('active-trip-user').classList.remove('hidden');
                     document.getElementById('view-d-nombre').innerText = v.conductor;
-                    document.getElementById('view-d-vehi').innerText = v.modelo + " " + v.color;
+                    document.getElementById('view-d-vehi').innerText = `${v.modelo} (${v.color}) - Placa: ${v.placa}`;
                     document.getElementById('view-d-foto').src = v.fotoConductor;
                     escucharChat();
                 }
             });
         }
 
-        window.aceptarOferta = (key, monto, dUser) => {
+        window.confirmarConductor = (key, monto, dUser) => {
             db.ref('conductores/' + dUser).once('value', s => {
                 const d = s.val();
                 db.ref('viajes/' + currentViajeId).update({
@@ -188,62 +207,87 @@
                     placa: d.placa,
                     modelo: d.modelo,
                     color: d.color,
-                    fotoConductor: d.foto
+                    fotoConductor: d.foto,
+                    conductorUser: dUser
                 });
             });
         };
 
-        // --- CONDUCTOR ---
+        // --- LÓGICA CONDUCTOR ---
         function initDriverPanel(data) {
             showScreen('screen-driver');
             document.getElementById('d-label').innerText = data.nombre;
+            
             db.ref('viajes').on('value', snap => {
                 const list = document.getElementById('d-pedidos');
-                if(!document.getElementById('d-activo').classList.contains('hidden')) return;
-                list.innerHTML = "";
+                const activo = document.getElementById('d-activo');
+                
+                // Si el conductor ya está en un viaje aceptado por él
+                let viajeEncontrado = false;
                 snap.forEach(child => {
                     const v = child.val();
-                    if(v.estado === 'buscando') {
-                        list.innerHTML += `
-                            <div class="card">
-                                <p>👤 ${v.cliente} ($${v.oferta})</p>
-                                <p>${v.origen} ➔ ${v.destino}</p>
-                                <button onclick="aceptarDirecto('${child.key}')" style="background:var(--green);">ACEPTAR $${v.oferta}</button>
-                                <input type="number" id="neg-${child.key}" placeholder="Nueva Oferta $" style="margin-top:10px;">
-                                <button class="btn-negotiate" onclick="contraofertar('${child.key}')">CONTRAOFERTAR</button>
-                            </div>`;
+                    if(v.estado === 'aceptado' && v.conductorUser === data.user) {
+                        currentViajeId = child.key;
+                        viajeEncontrado = true;
+                        list.classList.add('hidden');
+                        activo.classList.remove('hidden');
+                        document.getElementById('info-cliente-d').innerHTML = `<b>Cliente:</b> ${v.cliente}<br><b>Ruta:</b> ${v.origen} ➔ ${v.destino}<br><b>Precio:</b> $${v.oferta}`;
+                        escucharChat();
                     }
                 });
+
+                if(!viajeEncontrado) {
+                    list.classList.remove('hidden');
+                    activo.classList.add('hidden');
+                    list.innerHTML = "<h4 style='text-align:center;'>Viajes Disponibles</h4>";
+                    snap.forEach(child => {
+                        const v = child.val();
+                        if(v.estado === 'buscando') {
+                            list.innerHTML += `
+                                <div class="card">
+                                    <p>👤 <b>${v.cliente}</b> ofrece <b>$${v.oferta}</b></p>
+                                    <p style="font-size:13px; color:gray;">📍 ${v.origen} ➔ ${v.destino}</p>
+                                    <input type="number" id="val-${child.key}" placeholder="Tu propuesta $" style="margin-top:10px;">
+                                    <button class="btn-negotiate" onclick="enviarContraoferta('${child.key}')">ENVIAR CONTRAOFERTA</button>
+                                </div>`;
+                        }
+                    });
+                }
             });
         }
 
-        window.contraofertar = (id) => {
-            const monto = document.getElementById('neg-'+id).value;
+        window.enviarContraoferta = (id) => {
+            const monto = document.getElementById('val-'+id).value;
             const d = JSON.parse(localStorage.getItem('driver_data'));
+            if(!monto) return alert("Ingresa un monto para negociar");
             db.ref('viajes/' + id + '/contraofertas/' + d.user).set({
                 nombre: d.nombre, monto: monto, user: d.user
-            });
-            alert("Propuesta enviada");
+            }).then(() => alert("Oferta enviada al cliente"));
         };
 
         window.cancelarViajeConductor = () => {
-            if(confirm("¿Cancelar y permitir que otro conductor lo tome?")) {
+            if(confirm("¿Seguro que quieres cancelar? El viaje volverá a estar disponible para otros.")) {
                 db.ref('viajes/' + currentViajeId).update({
                     estado: 'buscando',
                     conductor: null,
+                    conductorUser: null,
                     contraofertas: null,
                     chat: null
-                }).then(() => location.reload());
+                }).then(() => {
+                    document.getElementById('d-activo').classList.add('hidden');
+                    location.reload();
+                });
             }
         };
 
-        // --- CHAT Y SESIÓN ---
+        // --- CHAT COMPARTIDO ---
         window.enviarMensaje = (quien) => {
-            const msg = document.getElementById('input-chat-' + quien).value;
-            if(msg) {
-                db.ref('viajes/' + currentViajeId + '/chat').push({ user: quien, text: msg });
-                document.getElementById('input-chat-' + quien).value = "";
-            }
+            const input = document.getElementById('input-chat-' + quien);
+            if(input.value.trim() === "") return;
+            db.ref('viajes/' + currentViajeId + '/chat').push({
+                user: quien, text: input.value, time: Date.now()
+            });
+            input.value = "";
         };
 
         function escucharChat() {
@@ -255,19 +299,20 @@
                     const html = `<div class="msg ${m.user === 'user' ? 'me' : 'other'}">${m.text}</div>`;
                     boxes.forEach(b => { if(b) b.innerHTML += html; });
                 });
+                boxes.forEach(b => { if(b) b.scrollTop = b.scrollHeight; });
             });
         }
 
-        // (Funciones de Registro/Login iguales al código anterior para ahorrar espacio)
+        // --- SESIÓN Y REGISTRO ---
         window.registrarConductor = async () => {
             const user = document.getElementById('r-user').value.toLowerCase();
             const file = document.getElementById('r-foto').files[0];
-            let url = "";
-            if(file) {
-                const ref = storage.ref('conductores/' + user + '.jpg');
-                await ref.put(file);
-                url = await ref.getDownloadURL();
-            }
+            if(!user || !file) return alert("Foto y Usuario requeridos");
+            
+            const ref = storage.ref('conductores/' + user + '.jpg');
+            await ref.put(file);
+            const url = await ref.getDownloadURL();
+
             const d = {
                 nombre: document.getElementById('r-nombre').value,
                 user: user, pass: document.getElementById('r-pass').value,
@@ -289,7 +334,7 @@
                 if(d && d.pass === p) {
                     localStorage.setItem('driver_data', JSON.stringify(d));
                     location.reload();
-                } else alert("Error");
+                } else alert("Datos incorrectos");
             });
         };
 
