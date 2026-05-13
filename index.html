@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DriveTaxi - Sistema Limpio</title>
+    <title>DriveTaxi - Lista Limpia</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -35,7 +35,7 @@
     <div class="header">DRIVE-TAXI</div>
 
     <div class="container">
-        <!-- VISTAS -->
+        <!-- VISTAS PRINCIPALES -->
         <div id="view-home">
             <button onclick="changeView('view-user-form')">Pedir un Viaje</button>
             <button class="btn-secondary" onclick="changeView('view-driver-login')">Entrar como Conductor</button>
@@ -53,11 +53,9 @@
         <div id="view-driver-reg" class="hidden">
             <h3>Registro</h3>
             <input type="text" id="d-nombre" placeholder="Nombre Completo">
-            <label>Tu Foto:</label>
             <input type="file" accept="image/*" onchange="encodeImage(this, 'perfil')">
-            <input type="text" id="d-carro" placeholder="Modelo del Vehículo (Ej: Kia Picanto Rojo)">
+            <input type="text" id="d-carro" placeholder="Modelo del Vehículo">
             <input type="text" id="d-placa" placeholder="Placa">
-            <label>Foto del Vehículo:</label>
             <input type="file" accept="image/*" onchange="encodeImage(this, 'carro')">
             <input type="text" id="d-user" placeholder="Usuario">
             <input type="password" id="d-pass" placeholder="Contraseña">
@@ -67,9 +65,9 @@
 
         <div id="view-user-form" class="hidden">
             <h3>Solicitud de Viaje</h3>
-            <input type="text" id="u-nombre" placeholder="Nombre">
-            <input type="text" id="u-origen" placeholder="Origen">
-            <input type="text" id="u-destino" placeholder="Destino">
+            <input type="text" id="u-nombre" placeholder="Tu Nombre">
+            <input type="text" id="u-origen" placeholder="¿Dónde estás?">
+            <input type="text" id="u-destino" placeholder="¿A dónde vas?">
             <label>Oferta ($):</label>
             <input type="number" id="u-oferta" value="5.00">
             <div id="ofertas-recibidas"></div>
@@ -95,7 +93,7 @@
             <div id="info-asignada" class="card"></div>
             <div id="chat-box"></div>
             <div style="display: flex; gap: 5px; margin-top:10px">
-                <input type="text" id="chat-input" placeholder="Mensaje...">
+                <input type="text" id="chat-input" placeholder="Escribe...">
                 <button style="width:60px" onclick="enviarMensaje()">OK</button>
             </div>
             <button id="btn-finalizar" class="btn-secondary" style="margin-top:20px" onclick="finalizarViaje()">Finalizar Viaje</button>
@@ -103,9 +101,9 @@
 
         <div id="view-ticket" class="hidden">
             <div class="card" style="text-align: center;">
-                <h2 style="color:var(--accent)">¡VIAJE COMPLETADO!</h2>
+                <h2 style="color:var(--accent)">¡LLEGAMOS!</h2>
                 <div id="ticket-content"></div>
-                <button onclick="location.reload()">Cerrar</button>
+                <button onclick="location.reload()">Nuevo Viaje</button>
             </div>
         </div>
     </div>
@@ -153,7 +151,7 @@
                 changeView('view-driver-panel'); 
                 cargarViajesDisponibles();
                 escucharPilotos();
-            } else { alert("Datos incorrectos"); }
+            } else { alert("Error de acceso"); }
         });
     }
 
@@ -167,8 +165,8 @@
             list.innerHTML = "";
             snap.forEach(c => {
                 const p = c.val();
-                // FILTRO: Solo conductores reales con sesión iniciada
-                if(p.nombre && p.estado !== "offline") {
+                // LIMPIEZA CRÍTICA: Solo mostrar conductores reales y con sesión activa
+                if(p.nombre && (p.estado === "disponible" || p.estado === "en viaje")) {
                     const clase = p.estado === 'disponible' ? 'disponible' : 'en-viaje';
                     list.innerHTML += `<p><b>${p.nombre}</b> <span class="badge ${clase}">${p.estado}</span></p>`;
                 }
@@ -200,7 +198,7 @@
                 document.getElementById('ofertas-recibidas').innerHTML = `
                     <div class="card" style="border: 2px solid var(--primary)">
                         <p>${v.contraoferta.nombre} ofrece <b>$${v.contraoferta.monto}</b></p>
-                        <button onclick="aceptarContraoferta()">Aceptar</button>
+                        <button onclick="aceptarContraoferta()">Aceptar Precio</button>
                     </div>`;
             }
 
@@ -235,7 +233,7 @@
                     container.innerHTML += `<div class="card">
                         <b>Ruta:</b> ${v.origen} → ${v.destino}<br>Oferta: <b>$${v.oferta}</b>
                         <button onclick="aceptarViajeDirecto('${child.key}')">Aceptar</button>
-                        <button class="btn-secondary" onclick="enviarContraoferta('${child.key}')">Ofertar</button>
+                        <button class="btn-secondary" onclick="enviarContraoferta('${child.key}')">Negociar</button>
                     </div>`;
                 }
             });
@@ -278,9 +276,11 @@
     function mostrarTicket(v) {
         changeView('view-ticket');
         document.getElementById('ticket-content').innerHTML = `
-            <p><b>De:</b> ${v.origen}<br><b>A:</b> ${v.destino}</p>
-            <p>Piloto: ${v.conductor.nombre}</p>
-            <h1 style="font-size:3rem">$${v.oferta}</h1>
+            <p><b>Origen:</b> ${v.origen}</p>
+            <p><b>Destino:</b> ${v.destino}</p>
+            <hr>
+            <p>Conductor: ${v.conductor.nombre}</p>
+            <h1 style="font-size:3.5rem">$${v.oferta}</h1>
         `;
     }
 
