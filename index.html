@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Drive Taxi SA</title>
     
-    <!-- CONFIGURACIÓN PWA PARA ANDROID E IOS -->
+    <!-- CONFIGURACIÓN PWA CON TU NUEVO LOGO -->
     <meta name="theme-color" content="#fbbf24">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Referencias al nuevo logo 1535791.png -->
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/808/808439.png">
+    <link rel="icon" type="image/png" href="1535791.png">
+    <link rel="apple-touch-icon" href="1535791.png">
 
     <!-- Firebase & Leaflet -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -37,9 +40,9 @@
 <body>
 
     <div id="app">
-        <!-- PANTALLA INICIAL -->
+        <!-- PANTALLA INICIAL CON TU NUEVO LOGO -->
         <div id="screen-start" style="text-align:center; padding-top:60px;">
-            <img src="https://cdn-icons-png.flaticon.com/512/808/808439.png" width="100" style="margin-bottom:20px;">
+            <img src="1535791.png" width="120" style="margin-bottom:20px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
             <h1>Drive Taxi SA</h1>
             <div style="padding: 20px;">
                 <button onclick="initUserFlow()">PEDIR TAXI (MAPA)</button>
@@ -93,14 +96,14 @@
                         Pago: <b id="d-v-oferta"></b>
                     </div>
                     <button onclick="abrirNavegadorApp()" class="btn-blue">🧭 NAVEGAR CON GOOGLE MAPS</button>
-                    <div id="d-controles"></div>
+                    <div id="d-controles" style="margin-top:15px;"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // CONFIGURACIÓN FIREBASE (Usa tus credenciales reales)
+        // CONFIGURACIÓN FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyDgIX4jKwyQcfaTSP0QXAdIAR7UzrQMK3g",
             authDomain: "drive-taxi-baad8.firebaseapp.com",
@@ -169,7 +172,7 @@
             else {
                 const p = prompt("Acceso Conductor:");
                 if(p === "Taber2026%") {
-                    driverData = { nombre: "Chofer", foto: "https://via.placeholder.com/60", tel: "70000000", carro: "Taxi" };
+                    driverData = { nombre: "Chofer", foto: "1535791.png", tel: "70000000", carro: "Taxi" };
                     localStorage.setItem('taxi_driver_v2', JSON.stringify(driverData));
                     initDriverPanel();
                 }
