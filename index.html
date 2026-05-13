@@ -5,56 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Driver Santa Ana</title>
     
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-storage-compat.js"></script>
 
     <style>
-        :root { --waze-blue: #3366FF; --dark: #202124; --green: #00D37F; --white: #FFFFFF; --red: #FF4B4B; }
+        :root { --waze-blue: #3366FF; --dark: #202124; --green: #00D37F; --white: #FFFFFF; --red: #FF4B4B; --yellow: #FFC107; }
         body { font-family: 'Segoe UI', sans-serif; background: #F2F4F7; margin: 0; color: var(--dark); }
         .card { background: var(--white); padding: 20px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); margin: 15px; }
-        input { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 12px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
+        input, select, textarea { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 12px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
         button { width: 100%; padding: 18px; border-radius: 15px; border: none; background: var(--waze-blue); color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
         .hidden { display: none !important; }
         .btn-cancel { background: var(--red); margin-top: 10px; }
+        .btn-negotiate { background: var(--yellow); color: var(--dark); margin-top: 5px; }
         .btn-outline { background: #E9EDF0; color: var(--dark); margin-top: 10px; }
-        .driver-info { border-left: 5px solid var(--green); padding-left: 15px; }
-        .status-badge { display: inline-block; padding: 5px 10px; border-radius: 10px; font-size: 12px; background: #eee; margin-bottom: 10px; }
+        
+        /* Estilos de Chat */
+        #chat-box { height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; }
+        .msg { margin-bottom: 5px; padding: 8px; border-radius: 8px; font-size: 14px; }
+        .msg.me { background: var(--waze-blue); color: white; text-align: right; }
+        .msg.other { background: #ddd; }
+
+        .profile-img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 3px solid var(--green); }
+        .terms-box { font-size: 11px; color: gray; height: 60px; overflow-y: scroll; border: 1px solid #eee; padding: 5px; margin-bottom: 10px; }
     </style>
 </head>
 <body onload="checkSession()">
 
     <div id="app">
-        <!-- INICIO -->
-        <div id="screen-start" style="text-align:center; padding-top:80px;">
+        <!-- PANTALLA INICIAL -->
+        <div id="screen-start" style="text-align:center; padding-top:60px;">
             <h1 style="font-weight: 800; font-size: 32px;">Driver Santa Ana</h1>
-            <p style="color: gray;">Transporte rápido y seguro</p>
+            <p style="color: gray;">Transporte en Santa Ana</p>
             <div style="padding: 20px;">
                 <button onclick="showScreen('screen-user-form')">PEDIR UN VIAJE</button>
                 <button onclick="showScreen('screen-login')" class="btn-outline">MODO CONDUCTOR</button>
             </div>
         </div>
 
-        <!-- LOGIN / REGISTRO (SIN CAMBIOS) -->
-        <div id="screen-login" class="hidden">
-            <div class="card">
-                <h2>Ingreso Conductor</h2>
-                <input type="text" id="l-user" placeholder="Usuario">
-                <input type="password" id="l-pass" placeholder="Contraseña">
-                <button onclick="intentarLogin()">ENTRAR</button>
-                <button onclick="showScreen('screen-register')" class="btn-outline">REGISTRARSE</button>
-                <button onclick="location.reload()" class="btn-outline">VOLVER</button>
-            </div>
-        </div>
-
+        <!-- REGISTRO CONDUCTOR CON FOTO Y TÉRMINOS -->
         <div id="screen-register" class="hidden">
             <div class="card">
-                <h2>Registro</h2>
+                <h3>Registro de Socio</h3>
                 <input type="text" id="r-nombre" placeholder="Nombre completo">
                 <input type="text" id="r-user" placeholder="Usuario">
                 <input type="password" id="r-pass" placeholder="Contraseña">
                 <input type="text" id="r-placa" placeholder="Placa (P-000)">
-                <input type="text" id="r-modelo" placeholder="Modelo y Color">
-                <button onclick="registrarConductor()">REGISTRAR</button>
+                <input type="text" id="r-modelo" placeholder="Modelo del Vehículo">
+                <input type="text" id="r-color" placeholder="Color del Vehículo">
+                
+                <label style="font-size: 12px; font-weight: bold;">Foto Selfie:</label>
+                <input type="file" id="r-foto" accept="image/*">
+
+                <div class="terms-box">
+                    Al registrarse como conductor en Driver Santa Ana, usted acepta que es responsable de la seguridad del pasajero, posee documentos en regla y acepta la comisión del 0% por el uso de la plataforma local. No nos hacemos responsables por objetos perdidos.
+                </div>
+                <label style="font-size: 13px;"><input type="checkbox" id="r-terms"> Acepto los términos y condiciones</label>
+                <button onclick="registrarConductor()" id="btn-reg-exec" style="margin-top:15px;">REGISTRARSE</button>
                 <button onclick="showScreen('screen-login')" class="btn-outline">CANCELAR</button>
             </div>
         </div>
@@ -64,61 +72,91 @@
             <div class="card">
                 <h2>¿A dónde vas?</h2>
                 <input type="text" id="u-nombre" placeholder="Tu nombre">
-                <input type="text" id="u-origen" placeholder="¿Dónde estás? (Ej: Parque Libertad)">
-                <input type="text" id="u-destino" placeholder="¿A dónde vas? (Ej: Metrocentro)">
+                <input type="text" id="u-origen" placeholder="¿Dónde estás?">
+                <input type="text" id="u-destino" placeholder="¿A dónde vas?">
                 <input type="number" id="u-oferta" placeholder="Tu oferta $">
-                <button onclick="enviarPedido()" style="background:var(--green);">SOLICITAR AHORA</button>
+                <button onclick="enviarPedido()" style="background:var(--green);">SOLICITAR</button>
                 <button onclick="location.reload()" class="btn-outline">VOLVER</button>
             </div>
         </div>
 
-        <!-- ESPERA USUARIO -->
+        <!-- ESPERA USUARIO Y NEGOCIACIÓN -->
         <div id="screen-user-wait" class="hidden">
-            <div class="card" style="text-align:center;">
-                <div id="wait-status">
-                    <div class="status-badge">Buscando conductores...</div>
-                    <p>Mantén esta pantalla abierta</p>
-                </div>
-                
-                <div id="driver-profile" class="hidden driver-info" style="text-align:left;">
-                    <h3 style="color:var(--green);">¡Conductor en camino!</h3>
-                    <p><b>Nombre:</b> <span id="view-d-nombre"></span></p>
-                    <p><b>Vehículo:</b> <span id="view-d-modelo"></span></p>
-                    <p><b>Placa:</b> <span id="view-d-placa"></span></p>
+            <div class="card">
+                <div id="wait-status" style="text-align:center;">
+                    <div class="status-badge">Buscando conductores en la zona...</div>
+                    <div id="ofertas-recibidas"></div>
                 </div>
 
-                <button onclick="cancelarViajeUsuario()" class="btn-cancel">CANCELAR VIAJE</button>
+                <div id="active-trip-user" class="hidden">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <img id="view-d-foto" class="profile-img" src="">
+                        <div>
+                            <h4 id="view-d-nombre" style="margin:0;"></h4>
+                            <p id="view-d-vehi" style="font-size:12px; margin:0; color:gray;"></p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div id="chat-box-user" class="chat-box"></div>
+                    <input type="text" id="chat-input-user" placeholder="Escribe al conductor...">
+                    <button onclick="enviarMensaje('user')" style="padding:10px; font-size:12px;">Enviar</button>
+                </div>
+
+                <button onclick="cancelarViajeUsuario()" class="btn-cancel">CANCELAR</button>
             </div>
         </div>
 
         <!-- PANEL CONDUCTOR -->
         <div id="screen-driver" class="hidden">
-            <div class="card">
-                <p>Hola, <b id="d-label"></b> (En línea)</p>
-                <button onclick="cerrarSesion()" style="width:auto; padding:5px 10px; font-size:12px; background:var(--red);">SALIR</button>
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Conector: <b id="d-label"></b></span>
+                <button onclick="cerrarSesion()" style="width:auto; padding:5px 10px; font-size:11px; background:var(--red);">SALIR</button>
             </div>
-            <div id="d-pedidos"></div>
             
+            <div id="d-pedidos"></div>
+            <div id="d-tomados" class="card" style="font-size:12px; background:#f0f0f0;">
+                <p><b>Viajes tomados recientemente:</b></p>
+                <div id="log-viajes"></div>
+            </div>
+
+            <!-- CHAT CONDUCTOR -->
             <div id="d-activo" class="hidden card">
-                <h3 style="color:var(--green);">Viaje aceptado</h3>
-                <p id="info-viaje-activo"></p>
-                <button onclick="finalizarViaje()" style="background:var(--green);">TERMINAR VIAJE</button>
+                <h3 style="color:var(--green);">Viaje en Curso</h3>
+                <div id="chat-box-driver" style="height:120px; overflow-y:auto; background:#eee; padding:10px; margin-bottom:5px;"></div>
+                <input type="text" id="chat-input-driver" placeholder="Mensaje al cliente...">
+                <button onclick="enviarMensaje('driver')" style="padding:10px; margin-bottom:10px;">Enviar</button>
+                <button onclick="finalizarViaje()" style="background:var(--green);">FINALIZAR</button>
                 <button onclick="cancelarViajeConductor()" class="btn-cancel">CANCELAR</button>
             </div>
         </div>
+
+        <!-- LOGIN (Simplificado) -->
+        <div id="screen-login" class="hidden">
+            <div class="card">
+                <h2>Login</h2>
+                <input type="text" id="l-user" placeholder="Usuario">
+                <input type="password" id="l-pass" placeholder="Clave">
+                <button onclick="intentarLogin()">ENTRAR</button>
+                <button onclick="showScreen('screen-register')" class="btn-outline">REGISTRARSE</button>
+                <button onclick="location.reload()" class="btn-outline">VOLVER</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
+        // CONFIGURACIÓN (Usa la tuya de siempre)
         const firebaseConfig = {
             apiKey: "AIzaSyDgIX4jKwyQcfaTSP0QXAdIAR7UzrQMK3g",
             authDomain: "drive-taxi-baad8.firebaseapp.com",
             databaseURL: "https://drive-taxi-baad8-default-rtdb.firebaseio.com",
             projectId: "drive-taxi-baad8",
-            storageBucket: "drive-taxi-baad8.firebasestorage.app",
+            storageBucket: "drive-taxi-baad8.appspot.com",
             appId: "1:308551715355:web:e802500e252893be8c86be"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const storage = firebase.storage();
         let currentViajeId = null;
 
         window.showScreen = (id) => {
@@ -126,126 +164,199 @@
             document.getElementById(id).classList.remove('hidden');
         };
 
-        // --- LÓGICA USUARIO ---
-        window.enviarPedido = () => {
-            const nombre = document.getElementById('u-nombre').value;
-            const ori = document.getElementById('u-origen').value;
-            const des = document.getElementById('u-destino').value;
-            const oferta = document.getElementById('u-oferta').value;
+        // --- REGISTRO CON FOTO ---
+        window.registrarConductor = async () => {
+            if(!document.getElementById('r-terms').checked) return alert("Debes aceptar los términos");
+            const btn = document.getElementById('btn-reg-exec');
+            btn.innerText = "Subiendo datos...";
+            btn.disabled = true;
 
-            if(!nombre || !ori || !des || !oferta) return alert("Completa todos los campos");
+            const user = document.getElementById('r-user').value.toLowerCase();
+            const file = document.getElementById('r-foto').files[0];
+            let fotoUrl = "";
 
-            currentViajeId = "V-" + Date.now();
-            db.ref('viajes/' + currentViajeId).set({
-                cliente: nombre, origen: ori, destino: des, oferta: oferta, estado: 'buscando'
+            if(file) {
+                const ref = storage.ref('conductores/' + user + '.jpg');
+                await ref.put(file);
+                fotoUrl = await ref.getDownloadURL();
+            }
+
+            const d = {
+                nombre: document.getElementById('r-nombre').value,
+                user: user,
+                pass: document.getElementById('r-pass').value,
+                placa: document.getElementById('r-placa').value,
+                modelo: document.getElementById('r-modelo').value,
+                color: document.getElementById('r-color').value,
+                foto: fotoUrl
+            };
+            db.ref('conductores/' + user).set(d).then(() => {
+                localStorage.setItem('driver_data', JSON.stringify(d));
+                location.reload();
             });
+        };
 
+        // --- NEGOCIACIÓN ---
+        window.enviarPedido = () => {
+            const v = {
+                cliente: document.getElementById('u-nombre').value,
+                origen: document.getElementById('u-origen').value,
+                destino: document.getElementById('u-destino').value,
+                oferta: document.getElementById('u-oferta').value,
+                estado: 'buscando',
+                hora: new Date().toLocaleTimeString()
+            };
+            currentViajeId = "V-" + Date.now();
+            db.ref('viajes/' + currentViajeId).set(v);
             showScreen('screen-user-wait');
-            
-            // Escuchar si alguien acepta
+            escucharViajeUsuario();
+        };
+
+        function escucharViajeUsuario() {
             db.ref('viajes/' + currentViajeId).on('value', snap => {
                 const v = snap.val();
                 if(!v) return;
+                
+                // Mostrar contraofertas
+                if(v.contraofertas) {
+                    const div = document.getElementById('ofertas-recibidas');
+                    div.innerHTML = "<h4>Ofertas de conductores:</h4>";
+                    Object.keys(v.contraofertas).forEach(key => {
+                        const co = v.contraofertas[key];
+                        div.innerHTML += `
+                            <div class="card" style="border:1px solid var(--yellow)">
+                                <p>${co.nombre} propone: <b>$${co.monto}</b></p>
+                                <button onclick="aceptarPropuesta('${key}', '${co.monto}', '${co.user}')" style="background:var(--green); padding:10px;">ACEPTAR $${co.monto}</button>
+                            </div>`;
+                    });
+                }
+
                 if(v.estado === 'aceptado') {
                     document.getElementById('wait-status').classList.add('hidden');
-                    document.getElementById('driver-profile').classList.remove('hidden');
+                    document.getElementById('active-trip-user').classList.remove('hidden');
                     document.getElementById('view-d-nombre').innerText = v.conductor;
-                    document.getElementById('view-d-modelo').innerText = v.modelo;
-                    document.getElementById('view-d-placa').innerText = v.placa;
-                }
-                if(v.estado === 'cancelado') {
-                    alert("El conductor canceló el viaje.");
-                    location.reload();
+                    document.getElementById('view-d-vehi').innerText = `${v.modelo} (${v.color}) - ${v.placa}`;
+                    document.getElementById('view-d-foto').src = v.fotoConductor || '';
+                    escucharChat();
                 }
             });
-        };
+        }
 
-        window.cancelarViajeUsuario = () => {
-            if(currentViajeId) db.ref('viajes/' + currentViajeId).remove();
-            location.reload();
-        };
-
-        // --- LÓGICA CONDUCTOR ---
-        window.checkSession = () => {
-            const session = localStorage.getItem('driver_data');
-            if (session) initDriverPanel(JSON.parse(session));
-        };
-
-        window.intentarLogin = () => {
-            const user = document.getElementById('l-user').value.toLowerCase();
-            const pass = document.getElementById('l-pass').value;
-            db.ref('conductores/' + user).once('value', snap => {
-                const d = snap.val();
-                if(d && d.pass === pass) {
-                    localStorage.setItem('driver_data', JSON.stringify(d));
-                    initDriverPanel(d);
-                } else alert("Error de acceso");
+        window.aceptarPropuesta = (key, monto, driverUser) => {
+            db.ref('conductores/' + driverUser).once('value', s => {
+                const d = s.val();
+                db.ref('viajes/' + currentViajeId).update({
+                    estado: 'aceptado',
+                    oferta: monto,
+                    conductor: d.nombre,
+                    placa: d.placa,
+                    modelo: d.modelo,
+                    color: d.color,
+                    fotoConductor: d.foto
+                });
             });
         };
 
-        window.registrarConductor = () => {
-            const d = {
-                nombre: document.getElementById('r-nombre').value,
-                user: document.getElementById('r-user').value.toLowerCase(),
-                pass: document.getElementById('r-pass').value,
-                placa: document.getElementById('r-placa').value,
-                modelo: document.getElementById('r-modelo').value
-            };
-            db.ref('conductores/' + d.user).set(d).then(() => {
-                localStorage.setItem('driver_data', JSON.stringify(d));
-                initDriverPanel(d);
-            });
-        };
-
+        // --- CONDUCTOR ---
         function initDriverPanel(data) {
             showScreen('screen-driver');
             document.getElementById('d-label').innerText = data.nombre;
             
+            // Ver pedidos y permitir negociar
             db.ref('viajes').on('value', snap => {
                 const list = document.getElementById('d-pedidos');
-                if(!document.getElementById('d-activo').classList.contains('hidden')) return;
+                const log = document.getElementById('log-viajes');
+                list.innerHTML = ""; log.innerHTML = "";
                 
-                list.innerHTML = "";
                 snap.forEach(child => {
                     const v = child.val();
                     if(v.estado === 'buscando') {
-                        list.innerHTML += `<div class="card">
-                            <p>👤 <b>${v.cliente}</b></p>
-                            <p>📍 Recoger: ${v.origen}</p>
-                            <p>🏁 Destino: ${v.destino}</p>
-                            <p style="font-size:20px; color:var(--green);">$${v.oferta}</p>
-                            <button onclick="aceptarViaje('${child.key}')">ACEPTAR</button>
-                        </div>`;
+                        list.innerHTML += `
+                            <div class="card">
+                                <p>👤 ${v.cliente} ($${v.oferta})</p>
+                                <p style="font-size:12px;">${v.origen} ➔ ${v.destino}</p>
+                                <button onclick="aceptarViajeDirecto('${child.key}')" style="background:var(--green);">ACEPTAR $${v.oferta}</button>
+                                <input type="number" id="neg-${child.key}" placeholder="Contraoferta $" style="margin-top:10px;">
+                                <button class="btn-negotiate" onclick="negociar('${child.key}')">ENVIAR CONTRAOFERTA</button>
+                            </div>`;
+                    } else if(v.estado === 'aceptado') {
+                        log.innerHTML += `<p>✅ ${v.conductor} tomó a ${v.cliente} a las ${v.hora || ''}</p>`;
                     }
                 });
             });
         }
 
-        window.aceptarViaje = (id) => {
+        window.negociar = (id) => {
+            const monto = document.getElementById('neg-'+id).value;
+            const d = JSON.parse(localStorage.getItem('driver_data'));
+            if(!monto) return alert("Pon un precio");
+            db.ref('viajes/' + id + '/contraofertas/' + d.user).set({
+                nombre: d.nombre, monto: monto, user: d.user
+            });
+            alert("Propuesta enviada");
+        };
+
+        window.aceptarViajeDirecto = (id) => {
             const d = JSON.parse(localStorage.getItem('driver_data'));
             currentViajeId = id;
             db.ref('viajes/' + id).update({
-                estado: 'aceptado', conductor: d.nombre, placa: d.placa, modelo: d.modelo
+                estado: 'aceptado', conductor: d.nombre, placa: d.placa, 
+                modelo: d.modelo, color: d.color, fotoConductor: d.foto
             }).then(() => {
                 document.getElementById('d-pedidos').innerHTML = "";
                 document.getElementById('d-activo').classList.remove('hidden');
-                db.ref('viajes/' + id).once('value', s => {
-                    const v = s.val();
-                    document.getElementById('info-viaje-activo').innerHTML = `Cliente: ${v.cliente}<br>De: ${v.origen}<br>A: ${v.destino}`;
-                });
+                escucharChat();
             });
         };
 
-        window.finalizarViaje = () => {
-            db.ref('viajes/' + currentViajeId).remove();
-            location.reload();
+        // --- CHAT ---
+        function enviarMensaje(quien) {
+            const input = document.getElementById('chat-input-' + quien);
+            if(!input.value) return;
+            db.ref('viajes/' + currentViajeId + '/chat').push({
+                user: quien, msg: input.value
+            });
+            input.value = "";
+        }
+
+        function escucharChat() {
+            db.ref('viajes/' + currentViajeId + '/chat').on('value', snap => {
+                const chatU = document.getElementById('chat-box-user');
+                const chatD = document.getElementById('chat-box-driver');
+                if(chatU) chatU.innerHTML = "";
+                if(chatD) chatD.innerHTML = "";
+                
+                snap.forEach(child => {
+                    const m = child.val();
+                    const html = `<div class="msg ${m.user}">${m.msg}</div>`;
+                    if(chatU) chatU.innerHTML += html;
+                    if(chatD) chatD.innerHTML += html;
+                });
+                if(chatU) chatU.scrollTop = chatU.scrollHeight;
+                if(chatD) chatD.scrollTop = chatD.scrollHeight;
+            });
+        }
+
+        // --- SESIÓN Y OTROS ---
+        window.intentarLogin = () => {
+            const user = document.getElementById('l-user').value.toLowerCase();
+            const pass = document.getElementById('l-pass').value;
+            db.ref('conductores/' + user).once('value', s => {
+                const d = s.val();
+                if(d && d.pass === pass) {
+                    localStorage.setItem('driver_data', JSON.stringify(d));
+                    location.reload();
+                } else alert("Error");
+            });
         };
 
-        window.cancelarViajeConductor = () => {
-            db.ref('viajes/' + currentViajeId).update({ estado: 'cancelado' });
-            setTimeout(() => { db.ref('viajes/' + currentViajeId).remove(); location.reload(); }, 1000);
+        window.checkSession = () => {
+            const session = localStorage.getItem('driver_data');
+            if (session) initDriverPanel(JSON.parse(session));
         };
 
+        window.finalizarViaje = () => { db.ref('viajes/' + currentViajeId).remove(); location.reload(); };
+        window.cancelarViajeUsuario = () => { db.ref('viajes/' + currentViajeId).remove(); location.reload(); };
         window.cerrarSesion = () => { localStorage.clear(); location.reload(); };
     </script>
 </body>
