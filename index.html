@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DriveTaxi - Sistema Completo</title>
+    <title>DriveTaxi - Sistema Corregido</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -35,7 +35,6 @@
     <div class="header">DRIVE-TAXI</div>
 
     <div class="container">
-        
         <!-- VISTA: HOME -->
         <div id="view-home">
             <button onclick="changeView('view-user-form')">Pedir un Viaje</button>
@@ -88,7 +87,7 @@
             <div id="lista-viajes"></div>
         </div>
 
-        <!-- VISTA: VIAJE ACTIVO -->
+        <!-- VISTA: VIAJE ACTIVO Y CHAT -->
         <div id="view-active-trip" class="hidden">
             <div id="info-asignada" class="card"></div>
             <div id="chat-box"></div>
@@ -111,7 +110,6 @@
                 <button onclick="location.reload()">Nuevo Viaje</button>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -122,7 +120,6 @@
 
     let tripID = null, rol = "", miNombre = "", fotoBase64 = "", datosViajeLocal = {}, conductorLogueado = null;
 
-    // --- PERSISTENCIA ---
     window.onload = () => {
         const saved = localStorage.getItem('driverData');
         if(saved) {
@@ -155,36 +152,20 @@
             const d = s.val();
             if(d && d.pass === pass) {
                 localStorage.setItem('driverData', JSON.stringify(d));
-                conductorLogueado = d;
-                miNombre = d.nombre;
-                rol = "conductor";
-                changeView('view-driver-panel');
-                cargarViajesDisponibles();
+                conductorLogueado = d; miNombre = d.nombre; rol = "conductor";
+                changeView('view-driver-panel'); cargarViajesDisponibles();
             } else { alert("Credenciales incorrectas"); }
         });
     }
 
-    function logoutConductor() {
-        localStorage.removeItem('driverData');
-        location.reload();
-    }
+    function logoutConductor() { localStorage.removeItem('driverData'); location.reload(); }
 
     function registrarConductor() {
-        const d = { 
-            nombre: document.getElementById('d-nombre').value, 
-            carro: document.getElementById('d-carro').value, 
-            placa: document.getElementById('d-placa').value, 
-            usuario: document.getElementById('d-user').value, 
-            pass: document.getElementById('d-pass').value, 
-            foto: fotoBase64 
-        };
+        const d = { nombre: document.getElementById('d-nombre').value, carro: document.getElementById('d-carro').value, placa: document.getElementById('d-placa').value, usuario: document.getElementById('d-user').value, pass: document.getElementById('d-pass').value, foto: fotoBase64 };
         database.ref('conductores/' + d.usuario).set(d).then(() => {
             localStorage.setItem('driverData', JSON.stringify(d));
-            conductorLogueado = d;
-            miNombre = d.nombre;
-            rol = "conductor";
-            changeView('view-driver-panel');
-            cargarViajesDisponibles();
+            conductorLogueado = d; miNombre = d.nombre; rol = "conductor";
+            changeView('view-driver-panel'); cargarViajesDisponibles();
         });
     }
 
@@ -211,7 +192,10 @@
                         <button onclick="aceptarContraoferta()">Aceptar Oferta</button>
                     </div>`;
             }
-            if(v.estado === "aceptado") { mostrarFichaConductor(v.conductor); iniciarChat(); }
+            if(v.estado === "aceptado") { 
+                mostrarFichaCompleta(v.conductor); 
+                iniciarChat(); 
+            }
         });
     }
 
@@ -240,8 +224,15 @@
     }
 
     function aceptarViajeDirecto(id) {
-        database.ref('viajes_activos/' + id).update({ estado: "aceptado", conductor: conductorLogueado });
-        tripID = id; iniciarChat();
+        tripID = id;
+        database.ref('viajes_activos/' + id).update({ estado: "aceptado", conductor: conductorLogueado }).then(() => {
+            // Aseguramos que el conductor vea el chat inmediatamente
+            database.ref('viajes_activos/' + id).once('value', s => {
+                datosViajeLocal = s.val();
+                mostrarFichaCompleta(conductorLogueado);
+                iniciarChat();
+            });
+        });
     }
 
     function hacerContraoferta(id) {
@@ -250,15 +241,26 @@
     }
 
     // --- CHAT Y FINALIZACIÓN ---
-    function mostrarFichaConductor(c) {
+    function mostrarFichaCompleta(c) {
         changeView('view-active-trip');
-        document.getElementById('info-asignada').innerHTML = `<h3>En camino</h3><p>${c.nombre} | ${c.placa}</p><p>Total: $${datosViajeLocal.oferta}</p>`;
+        const infoDiv = document.getElementById('info-asignada');
+        infoDiv.innerHTML = `
+            <div style="text-align:center">
+                <h3>Piloto Asignado</h3>
+                ${c.foto ? `<img src="${c.foto}" class="img-preview" style="margin-bottom:10px">` : ''}
+                <p><b>Nombre:</b> ${c.nombre}</p>
+                <p><b>Vehículo:</b> ${c.carro}</p>
+                <p><b>Placa:</b> ${c.placa}</p>
+                <p style="font-size:1.2rem; color:green"><b>Precio: $${datosViajeLocal.oferta}</b></p>
+            </div>`;
     }
 
     function iniciarChat() {
-        changeView('view-active-trip');
+        const box = document.getElementById('chat-box');
+        box.innerHTML = ""; // Limpiar antes de abrir
+        database.ref('chats/' + tripID).off(); // Evitar duplicados
         database.ref('chats/' + tripID).on('child_added', (snap) => {
-            const m = snap.val(), box = document.getElementById('chat-box'), clase = (m.rol === rol) ? 'user' : 'driver';
+            const m = snap.val(), clase = (m.rol === rol) ? 'user' : 'driver';
             box.innerHTML += `<div class="msg ${clase}"><b>${m.nombre}:</b><br>${m.texto}</div>`;
             box.scrollTop = box.scrollHeight;
         });
