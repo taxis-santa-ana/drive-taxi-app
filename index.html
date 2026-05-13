@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Drive Taxi SA</title>
     
-    <!-- PWA CONFIG -->
+    <!-- PWA -->
     <meta name="theme-color" content="#3366FF">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,150 +19,82 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        :root { 
-            --waze-blue: #3366FF; 
-            --waze-baby: #B2D8FF;
-            --dark: #202124; 
-            --green: #00D37F; 
-            --white: #FFFFFF;
-        }
-        
-        body { 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            background: #F2F4F7; 
-            margin: 0; 
-            color: var(--dark);
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .card { 
-            background: var(--white); 
-            padding: 25px; 
-            border-radius: 24px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
-            margin: 15px;
-            border: 1px solid #E9EDF0;
-        }
-
-        #map-user, #map-driver { 
-            height: 380px; 
-            width: 100%; 
-            border-radius: 20px; 
-            margin-bottom: 15px; 
-            z-index: 1;
-            border: 1px solid #ddd;
-        }
-
-        input {
-            width: 100%;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-radius: 16px;
-            border: 2px solid #E9EDF0;
-            font-size: 18px;
-            box-sizing: border-box;
-            outline: none;
-        }
-
-        button { 
-            width: 100%; 
-            padding: 20px; 
-            border-radius: 20px; 
-            border: none; 
-            background: var(--waze-blue); 
-            color: white;
-            font-weight: bold; 
-            cursor: pointer; 
-            font-size: 18px; 
-            margin-top: 10px; 
-            box-shadow: 0 4px 12px rgba(51, 102, 255, 0.2);
-        }
-
+        :root { --waze-blue: #3366FF; --waze-baby: #B2D8FF; --dark: #202124; --green: #00D37F; --white: #FFFFFF; }
+        body { font-family: 'Segoe UI', sans-serif; background: #F2F4F7; margin: 0; color: var(--dark); -webkit-tap-highlight-color: transparent; }
+        .card { background: var(--white); padding: 25px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); margin: 15px; border: 1px solid #E9EDF0; }
+        #map-user, #map-driver { height: 350px; width: 100%; border-radius: 20px; margin-bottom: 15px; z-index: 1; border: 1px solid #ddd; }
+        input { width: 100%; padding: 18px; margin-bottom: 12px; border-radius: 16px; border: 2px solid #E9EDF0; font-size: 16px; box-sizing: border-box; outline: none; }
+        button { width: 100%; padding: 18px; border-radius: 20px; border: none; background: var(--waze-blue); color: white; font-weight: bold; cursor: pointer; font-size: 18px; margin-top: 10px; }
         button:active { transform: scale(0.98); }
         .hidden { display: none !important; }
-        .btn-outline { background: #E9EDF0; color: var(--dark); box-shadow: none; }
-        
-        .info-bubble {
-            background: var(--waze-baby);
-            padding: 15px;
-            border-radius: 16px;
-            font-size: 15px;
-            margin-bottom: 15px;
-            color: #003366;
-            text-align: center;
-        }
-
-        .header-bar { 
-            background: var(--white); 
-            padding: 15px 20px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-bottom: 1px solid #E9EDF0;
-        }
-
-        .logo-main {
-            width: 130px;
-            height: 130px;
-            margin-bottom: 20px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
+        .btn-outline { background: #E9EDF0; color: var(--dark); }
+        .info-bubble { background: var(--waze-baby); padding: 12px; border-radius: 16px; font-size: 14px; margin-bottom: 15px; color: #003366; text-align: center; }
+        .header-bar { background: var(--white); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E9EDF0; }
+        .logo-main { width: 120px; height: 120px; margin-bottom: 15px; border-radius: 50%; object-fit: cover; }
     </style>
 </head>
-<body>
+<body onload="checkSession()">
 
     <div id="app">
-        <!-- PANTALLA DE INICIO -->
+        <!-- INICIO -->
         <div id="screen-start" style="text-align:center; padding-top:60px;">
-            <img src="1535791.png" class="logo-main" alt="Logo Drive Taxi">
+            <img src="1535791.png" class="logo-main">
             <h1 style="font-weight: 800;">Drive Taxi SA</h1>
             <div style="padding: 20px;">
-                <button onclick="initUserFlow()">PEDIR UN VIAJE</button>
-                <button onclick="loginConductor()" class="btn-outline" style="margin-top:20px;">MODO CONDUCTOR</button>
+                <button onclick="showScreen('screen-user'); initUserMap();">PEDIR UN VIAJE</button>
+                <button onclick="showScreen('screen-login')" class="btn-outline" style="margin-top:20px;">MODO CONDUCTOR</button>
             </div>
         </div>
 
-        <!-- FLUJO USUARIO -->
-        <div id="screen-user" class="hidden">
+        <!-- LOGIN CONDUCTOR -->
+        <div id="screen-login" class="hidden">
             <div class="card">
-                <h2 id="step-title" style="margin:0 0 10px 0;">📍 Ubicación</h2>
-                <div id="map-user"></div>
-                <div id="route-info" class="info-bubble">Toca el mapa para marcar el origen</div>
-                
-                <input type="text" id="u-nombre" placeholder="Tu Nombre">
-                <input type="number" id="u-oferta" placeholder="Tu Oferta ($)">
-                
-                <button id="btn-next" onclick="toggleSelectionMode()">SIGUIENTE: DESTINO</button>
-                <button id="btn-send" onclick="enviarPedidoConMapa()" class="hidden" style="background:var(--green);">SOLICITAR AHORA</button>
+                <h2>Ingreso Conductor</h2>
+                <input type="text" id="l-user" placeholder="Usuario">
+                <input type="password" id="l-pass" placeholder="Contraseña">
+                <button onclick="intentarLogin()">ENTRAR</button>
+                <button onclick="showScreen('screen-register')" class="btn-outline">¿ERES NUEVO? REGÍSTRATE</button>
                 <button onclick="location.reload()" class="btn-outline">VOLVER</button>
             </div>
         </div>
 
-        <!-- PANTALLA DE ESPERA -->
-        <div id="screen-wait" class="hidden">
-            <div class="card" style="text-align:center;">
-                <div class="info-bubble">🚕 Buscando conductor...</div>
-                <h2 id="u-status">Esperando...</h2>
-                <button onclick="cancelarPedido()" style="background:#FF4B4B; margin-top:20px;">CANCELAR</button>
+        <!-- REGISTRO CONDUCTOR -->
+        <div id="screen-register" class="hidden">
+            <div class="card">
+                <h2>Registro de Conductor</h2>
+                <input type="text" id="r-nombre" placeholder="Nombre completo">
+                <input type="text" id="r-user" placeholder="Crea un Usuario">
+                <input type="password" id="r-pass" placeholder="Crea una Contraseña">
+                <hr>
+                <input type="text" id="r-placa" placeholder="Número de Placa">
+                <input type="text" id="r-modelo" placeholder="Modelo del Vehículo (Ej: Kia Picanto)">
+                <input type="text" id="r-color" placeholder="Color del Vehículo">
+                <button onclick="registrarConductor()" style="background:var(--green);">FINALIZAR REGISTRO</button>
+                <button onclick="showScreen('screen-login')" class="btn-outline">YA TENGO CUENTA</button>
+            </div>
+        </div>
+
+        <!-- USUARIO -->
+        <div id="screen-user" class="hidden">
+            <div class="card">
+                <h2 id="step-title">📍 Punto de recogida</h2>
+                <div id="map-user"></div>
+                <div id="route-info" class="info-bubble">Toca el mapa para marcar el origen</div>
+                <input type="text" id="u-nombre" placeholder="¿Cuál es tu nombre?">
+                <input type="number" id="u-oferta" placeholder="Tu Oferta ($)">
+                <button id="btn-next" onclick="toggleSelectionMode()">ESTABLECER DESTINO</button>
+                <button id="btn-send" onclick="enviarPedido()" class="hidden" style="background:var(--green);">SOLICITAR TAXI</button>
+                <button onclick="location.reload()" class="btn-outline">VOLVER</button>
             </div>
         </div>
 
         <!-- PANEL CONDUCTOR -->
         <div id="screen-driver" class="hidden">
             <div class="header-bar">
-                <span style="font-weight:bold;">Conductor: <span id="d-label" style="color:var(--waze-blue);"></span></span>
-                <button onclick="cerrarSesion()" style="width:auto; padding:10px; font-size:12px; margin:0; background:#FF4B4B;">SALIR</button>
+                <span style="font-weight:bold;">Hola, <span id="d-label" style="color:var(--waze-blue);"></span></span>
+                <button onclick="cerrarSesion()" style="width:auto; padding:8px; font-size:12px; margin:0; background:#FF4B4B;">SALIR</button>
             </div>
             <div id="d-pedidos"></div>
-            <div id="d-viaje-activo" class="hidden">
-                <div class="card">
-                    <h3>Viaje en Curso</h3>
-                    <div id="map-driver"></div>
-                    <button onclick="abrirNavegadorApp()">NAVEGAR (MAPS)</button>
-                    <div id="d-controles" style="margin-top:10px;"></div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -178,30 +110,73 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let mapU, mapD, markerOri, markerDes;
-        let coordsOri = null, coordsDes = null;
-        let selectionMode = 'origen';
-        let currentTripId = null;
+        let mapU, markerOri, markerDes, currentTripId, selectionMode = 'origen', coordsOri, coordsDes;
 
         function showScreen(id) {
             document.querySelectorAll('#app > div').forEach(s => s.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         }
 
-        // LOGIN CONDUCTOR ACTUALIZADO
-        function loginConductor() {
-            const user = prompt("Usuario:");
-            if (user === "Administrador") {
-                const pass = prompt("Contraseña:");
-                if (pass === "Taber2026%") {
-                    localStorage.setItem('taxi_session', 'active');
-                    initDriverPanel();
-                } else { alert("Error de credenciales"); }
-            } else if (user !== null) { alert("Usuario no reconocido"); }
+        // --- LÓGICA DE SESIÓN ---
+        function checkSession() {
+            const session = localStorage.getItem('driver_data');
+            if (session) {
+                const data = JSON.parse(session);
+                initDriverPanel(data);
+            }
         }
 
-        function initUserFlow() {
-            showScreen('screen-user');
+        function registrarConductor() {
+            const data = {
+                nombre: document.getElementById('r-nombre').value,
+                user: document.getElementById('r-user').value,
+                pass: document.getElementById('r-pass').value,
+                placa: document.getElementById('r-placa').value,
+                modelo: document.getElementById('r-modelo').value,
+                color: document.getElementById('r-color').value
+            };
+            if(!data.user || !data.pass || !data.placa) return alert("Completa los datos");
+            
+            db.ref('conductores/' + data.user).set(data).then(() => {
+                localStorage.setItem('driver_data', JSON.stringify(data));
+                initDriverPanel(data);
+            });
+        }
+
+        function intentarLogin() {
+            const user = document.getElementById('l-user').value;
+            const pass = document.getElementById('l-pass').value;
+            
+            db.ref('conductores/' + user).once('value', snap => {
+                const data = snap.val();
+                if (data && data.pass === pass) {
+                    localStorage.setItem('driver_data', JSON.stringify(data));
+                    initDriverPanel(data);
+                } else { alert("Usuario o contraseña incorrectos"); }
+            });
+        }
+
+        function initDriverPanel(data) {
+            showScreen('screen-driver');
+            document.getElementById('d-label').innerText = data.nombre;
+            db.ref('viajes').on('value', snap => {
+                const list = document.getElementById('d-pedidos');
+                list.innerHTML = "";
+                snap.forEach(child => {
+                    const v = child.val();
+                    if(v.estado === 'buscando') {
+                        list.innerHTML += `<div class="card">
+                            <p>👤 <b>${v.cliente}</b> ofrece <b>$${v.oferta}</b></p>
+                            <p style="font-size:12px; color:gray;">Ruta: Mapa disponible al aceptar</p>
+                            <button onclick="aceptarViaje('${child.key}')">ACEPTAR VIAJE</button>
+                        </div>`;
+                    }
+                });
+            });
+        }
+
+        // --- LÓGICA USUARIO ---
+        function initUserMap() {
             if (!mapU) {
                 mapU = L.map('map-user', {zoomControl: false}).setView([13.97, -89.56], 15);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapU);
@@ -220,52 +195,27 @@
         }
 
         function toggleSelectionMode() {
-            if (!coordsOri) return alert("Marca el origen en el mapa");
+            if (!coordsOri) return alert("Marca el origen");
             selectionMode = 'destino';
-            document.getElementById('step-title').innerText = "🏁 Destino";
-            document.getElementById('route-info').innerText = "Marca ahora a dónde vas";
+            document.getElementById('step-title').innerText = "🏁 Punto de destino";
             document.getElementById('btn-next').classList.add('hidden');
             document.getElementById('btn-send').classList.remove('hidden');
         }
 
-        function enviarPedidoConMapa() {
+        function enviarPedido() {
             const nom = document.getElementById('u-nombre').value;
             const ofe = document.getElementById('u-oferta').value;
             if(!nom || !ofe || !coordsDes) return alert("Faltan datos");
-            currentTripId = "ID-" + Date.now();
+            currentTripId = "VIAJE-" + Date.now();
             db.ref('viajes/' + currentTripId).set({
                 cliente: nom, oferta: ofe, estado: 'buscando',
                 latOri: coordsOri.lat, lngOri: coordsOri.lng,
                 latDes: coordsDes.lat, lngDes: coordsDes.lng
             });
-            showScreen('screen-wait');
-        }
-
-        function initDriverPanel() {
-            showScreen('screen-driver');
-            document.getElementById('d-label').innerText = "Administrador";
-            db.ref('viajes').on('value', snap => {
-                const list = document.getElementById('d-pedidos');
-                list.innerHTML = "";
-                snap.forEach(child => {
-                    const v = child.val();
-                    if(v.estado === 'buscando') {
-                        list.innerHTML += `<div class="card">
-                            <p>👤 <b>${v.cliente}</b> ofrece <b>$${v.oferta}</b></p>
-                            <button onclick="aceptarViaje('${child.key}')">ACEPTAR</button>
-                        </div>`;
-                    }
-                });
-            });
-        }
-
-        function aceptarViaje(id) {
-            db.ref('viajes/' + id).update({ estado: 'aceptado', cond: 'Administrador' });
-            alert("Viaje aceptado");
+            alert("Solicitud enviada. Espera respuesta.");
         }
 
         function cerrarSesion() { localStorage.clear(); location.reload(); }
-        function cancelarPedido() { db.ref('viajes/' + currentTripId).remove(); location.reload(); }
     </script>
 </body>
 </html>
